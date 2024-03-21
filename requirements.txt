@@ -1,0 +1,10 @@
+chainlit
+transformers==4.34.0
+sentence-transformers
+ctransformers
+chromadb
+langchain-community
+langchain
+PyPDFLoader
+
+#faltan agregar las librerias del umap
