@@ -1,0 +1,17 @@
+A partir de la version de python 3.4, ya viene con pip instalado,
+en versiones anteriores de python hay que instalarlo manualmente como script.
+
+instalacion de chainlit para utilizacion en el front-end:
+    # en la terminal de windows/linux/mac/vs code ejecutar el siguiente comando:
+        pip install chainlit
+    
+    # (saltar el siguiente paso en el caso de que no suceda)
+        podria lanzar un warning que nos mostrara una ruta del siguiente estilo:
+            C:\Users\"user-name"\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\Scripts
+            copiamos la direccion que aparezca.
+        en el buscador de windows: editar las variables de entorno del sistema -> variables de entorno -> path (en ambas cuadrillas) -> nuevo
+        pegamos la direccion copiada y aceptamos.
+    
+    # en la terminal (cualquiera menos vs code) ejecutamos:
+        chainlit hello
+    # es solo para asegurar que chainlit se haya instalado bien. va a abrir una pestaña del navegador con una prueba de una interfaz.
