@@ -46,34 +46,11 @@ def create_llm_model(load_in_8bit=False):
     return CTransformers(model= LLM_MISTRAL7B, model_file="mistral-7b-instruct-v0.2-code-ft.Q5_K_M.gguf", model_type="llama", config=config)
 
 embedding_model = create_embeding()
-llm=create_llm_model() 
+llm=create_llm_model()
 ########################################################################
 
 def format_docs(docs):
         return "\n\n".join([d.page_content for d in docs])
-
-def setup_runnable():
-    memory = cl.user_session.get("memory")  # type: ConversationBufferMemory
-    runnable = (
-        RunnablePassthrough.assign(
-            history=RunnableLambda(memory.load_memory_variables) | itemgetter("history")
-        )
-        | StrOutputParser()
-    )
-    cl.user_session.set("runnable", runnable)
-
-
-#autenticacion de usuario (proximamente podriamos usarlo con el servidor local del lines)
-@cl.password_auth_callback
-def auth_callback(username: str, password: str):
-    return cl.User(identifier="test")
-#     #identificacion de usuario
-#     if (username, password) == ("admin", "admin"):
-#         return cl.User(
-#             identifier="admin", metadata={"role": "admin", "provider": "credentials"}
-#         )
-#     else:
-#         return None
 
 
 #decorator que sirve para definir lo que va a suceder apenas arranque el chat
@@ -185,24 +162,7 @@ async def start():
         await cl.Message(
             content=f"pregunta: {question['output']}, cantidad de chunks encontrados: {len(retrieved_docs)}\nchunk1: {retrieved_docs[0].page_content} \nchunk2: {retrieved_docs[1].page_content}"
         ).send()
-    #setup_runnable()
 
-@cl.step
-async def tool():
-    # Simulate a running task
-    await cl.sleep(2)
-
-    await child_step() #llamo a una tarea hija
-    return 'Response 1'
-@cl.step
-async def child_step():
-    current_step = cl.context.current_step
-
-    # Override the input of the step
-    current_step.input = "My custom input"
-
-    # Override the output of the step
-    current_step.output = "Response 2"
 
 #decorator que define lo que sucede cuando el usuario envia un mensaje
 @cl.on_message
@@ -271,39 +231,3 @@ async def main(message: cl.Message):
     memory.chat_memory.add_user_message(message.content)
     memory.chat_memory.add_ai_message(msg.content)
 
-#el return devuelve un mensaje flotante en la pantalla
-@cl.action_callback("action_button")
-async def on_action(action: cl.Action):
-    print("The user clicked on the action button!")
-
-    return "Thank you for clicking on the action button!"
-
-#cuando el usuario clickea el boton para detener la tarea que se estaba ejecutando
-#hay que ver si se puede mostrar un mensaje flotante en la pantalla
-@cl.on_stop
-async def on_stop():
-    print("The user wants to stop the task!")
-
-#Cuando termina la sesion del usuario
-#hay que ver si se puede mostrar un mensaje flotante en la pantalla o si la IA puede mandar un saludo como ultimo mensaje
-@cl.on_chat_end
-def on_chat_end():
-    print("The user disconnected!")
-    return "thanks"
-
-
-
-# esto va con el ThreadDict -> proximamente aprenderemos a usarlo, necesitamos autenticacion
-@cl.on_chat_resume
-async def on_chat_resume(thread: ThreadDict):
-    print("The user resumed a previous chat session!")
-    memory = ConversationBufferMemory(return_messages=True)
-    root_messages = [m for m in thread["steps"] if m["parentId"] == None]
-    for message in root_messages:
-        if message["type"] == "USER_MESSAGE":
-            memory.chat_memory.add_user_message(message["output"])
-        else:
-            memory.chat_memory.add_ai_message(message["output"])
-
-    cl.user_session.set("memory", memory)
-    setup_runnable()
