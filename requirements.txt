@@ -6,5 +6,6 @@ chromadb
 langchain-community
 langchain
 PyPDFLoader
-
+umap-learn
+plotly
 #faltan agregar las librerias del umap
