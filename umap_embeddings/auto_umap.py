@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 
 def project_embeddings(embeddings, umap_transform):
-    umap_embeddings = np.empty((len(embeddings), 4))
+    umap_embeddings = np.empty((len(embeddings), 2))
     for i, embedding in enumerate(tqdm(embeddings)):
         umap_embeddings[i] = umap_transform.transform([embedding])
     return umap_embeddings
