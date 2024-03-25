@@ -23,6 +23,10 @@ from chromadb.errors import InvalidDimensionException
 from langchain.prompts import ChatPromptTemplate
 from langchain.callbacks.base import BaseCallbackHandler
 
+import sys
+sys.path.append("..")
+from umap_embeddings.auto_umap import make_umap
+
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000, chunk_overlap=200, add_start_index=True
 )
@@ -47,6 +51,17 @@ def create_llm_model(load_in_8bit=False):
 
 embedding_model = create_embeding()
 llm=create_llm_model()
+
+prompt_template = """Conteste la siguiente pregunta basandose solamente en el contexto provisto:
+Si no sabes la respuesta, sólo di que no sabes, no trates de crearla. Siempre di "gracias por preguntar!".
+Si la pregunta está fuera de contexto, amablemente informa que no fuiste entrenado para esa pregunta.
+Si el contexto no es relevante para contestar la pregunta, por favor no contestes la pregunta usando tu propio conocimiento.
+
+<contexto>
+{context}
+</contexto>
+
+Pregunta: {question}"""
 ########################################################################
 
 def format_docs(docs):
@@ -57,6 +72,7 @@ def format_docs(docs):
 @cl.on_chat_start
 async def start():
     # logger.info(f"Chat started!")
+    cl.user_session.set("session_number", 0)
 
     #necesito el langchain para esto
     cl.user_session.set("memory", ConversationBufferMemory(return_messages=True))
@@ -110,39 +126,17 @@ async def start():
             #guardo los chunks en chroma
             # logger.info("storing in chroma")
             try:
-                vectorstore = Chroma.from_documents(documents=chunks, embedding=embedding_model)
+                vector_db = Chroma.from_documents(documents=chunks, embedding=embedding_model)
             except InvalidDimensionException:
                 # logger.info(f"invalid dimension exception")
-                vectorstore.delete_collection()
-                vectorstore = Chroma.from_documents(documents=chunks, embedding=embedding_model)
+                vector_db.delete_collection()
+                vector_db = Chroma.from_documents(documents=chunks, embedding=embedding_model)
 
             #generar retriever
             # logger.info("retriever")
 
             
-            retriever = vectorstore.as_retriever(search_type="similarity",search_kwargs={"k":2})
-
-            #cargar prompt
-            # logger.info(f"prompt template")
-            prompt_template = """Conteste la siguiente pregunta basandose solamente en el contexto provisto:
-            Si no sabes la respuesta, sólo di que no sabes, no trates de crearla. Siempre di "gracias por preguntar!".
-            Si la pregunta está fuera de contexto, amablemente informa que no fuiste entrenado para esa pregunta.
-            Si el contexto no es relevante para contestar la pregunta, por favor no contestes la pregunta usando tu propio conocimiento.
-
-            <contexto>
-            {context}
-            </contexto>
-
-            Pregunta: {question}"""
-            prompt = ChatPromptTemplate.from_template(prompt_template)
-
-            #runable
-            # logger.info(f"runnable")
-
-
-
-            # logger.info(f"set runnable")
-            #cl.user_session.set("runnable", runnable) #user_sesion.set nos permite guardar informacion a traves del ciclo de vida del chat
+            retriever = vector_db.as_retriever(search_type="similarity",search_kwargs={"k":2})
 
             ##### backend
 
@@ -151,8 +145,15 @@ async def start():
                 timeout=500,
             ).send()
 
-            results = vectorstore.similarity_search(question['output'])
+            #results = vector_db.similarity_search(question['output'])
+
             retrieved_docs = retriever.invoke(question['output'])
+
+            #prompt = prompt_template.format(context= results, question=question['output'])
+
+            cl.user_session.set("retriever", retriever)
+            cl.user_session.set("vector_db", vector_db)
+            
 
 
 
@@ -169,13 +170,15 @@ async def start():
 #decorator que define lo que sucede cuando el usuario envia un mensaje
 @cl.on_message
 async def main(message: cl.Message):
-    memory = cl.user_session.get("memory")  # type: ConversationBufferMemory
-    runnable = cl.user_session.get("runnable")
-    msg=message
+
+    retriever = cl.user_session.get("retriever")
+    vector_db = cl.user_session.get("vector_db")
+    session_number = cl.user_session.get("session_number")
+    
+    
     actions = [
         cl.Action(name="action_button", value="example_value", description="Click me!")
-    ]
-    
+    ]    
 
     msg = cl.Message(content="") #Muestra un loader mientras carga el mensaje
     await msg.send()
@@ -187,51 +190,20 @@ async def main(message: cl.Message):
             pass
         msg.elements = [cl.Image(path=images[0].path, name="image", display="inline")]
 
-    class PostMessageHandler(BaseCallbackHandler):
-        """
-        Callback handler for handling the retriever and LLM processes.
-        Used to post the sources of the retrieved documents as a Chainlit element.
-        """
+    query = message.content
+    results = vector_db.similarity_search(query)
 
-        def __init__(self, msg: cl.Message):
-            logger.info(f"MSG received _init_: {message.content}")
-            BaseCallbackHandler.__init__(self)
-            self.msg = msg
-            self.sources = set()  # To store unique pairs
 
-        def on_retriever_end(self, documents, *, run_id, parent_run_id, **kwargs):
-            for d in documents:
-                source_page_pair = (d.metadata['source'], d.metadata['page'])
-                self.sources.add(source_page_pair)  # Add unique pairs to the set
+    if message.content.startswith("umap"):
+        query_embedding = embedding_model.embed_query(query)
+        umap_path = make_umap(vector_db, results, query_embedding, query, session_number)
+        msg.elements = [cl.Image(path=umap_path, name="umap", display="inline")]
 
-        def on_llm_end(self, response, *, run_id, parent_run_id, **kwargs):
-            if len(self.sources):
-                logger.info(f"MSG Received on_llm_end: {self.msg.content}")
-                sources_text = "\n".join([f"{source}#page={page}" for source, page in self.sources])
-                self.msg.elements.append(
-                    cl.Text(name="Sources", content=sources_text, display="inline")
-                )
-
-    async with cl.Step(type="run", name="Asistente PDF  QA"):
-        msg.content = f"Procesando la pregunta.Por favor espere!"
-        await msg.send()
-
-        async for chunk in runnable.astream(
-            message.content,
-            config=RunnableConfig(callbacks=[
-                cl.LangchainCallbackHandler(),
-                PostMessageHandler(message)
-            ]),
-        ):
-            await msg.stream_token(chunk)
-
-    await msg.send()
+    msg.content = f"resultado: {results[0].page_content}, {results[1].page_content}"
     msg.actions = actions #cargamos las acciones del mensaje (boton de accion de demostracion)
 
     await msg.update() #actualizamos el mensaje con los nuevos datos
 
-    memory.chat_memory.add_user_message(message.content)
-    memory.chat_memory.add_ai_message(msg.content)
 
 if __name__ == "__main__":
     from chainlit.cli import run_chainlit
