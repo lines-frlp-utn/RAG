@@ -190,14 +190,19 @@ async def main(message: cl.Message):
             pass
         msg.elements = [cl.Image(path=images[0].path, name="image", display="inline")]
 
-    query = message.content
-    results = vector_db.similarity_search(query)
+    
 
 
-    if message.content.startswith("umap"):
+    if message.content.startswith("umap "):
+        query = message.content[5:]
+        print(query)
+        results = vector_db.similarity_search(query)
         query_embedding = embedding_model.embed_query(query)
         umap_path = make_umap(vector_db, results, query_embedding, query, session_number)
         msg.elements = [cl.Image(path=umap_path, name="umap", display="inline")]
+    else:
+        query = message.content
+        results = vector_db.similarity_search(query)
 
     msg.content = f"resultado: {results[0].page_content}, {results[1].page_content}"
     msg.actions = actions #cargamos las acciones del mensaje (boton de accion de demostracion)
