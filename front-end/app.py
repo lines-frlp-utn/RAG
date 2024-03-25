@@ -72,7 +72,7 @@ def format_docs(docs):
 @cl.on_chat_start
 async def start():
     # logger.info(f"Chat started!")
-    cl.user_session.set("session_number", 0)
+    cl.user_session.set("session_number", 1)
 
     #necesito el langchain para esto
     cl.user_session.set("memory", ConversationBufferMemory(return_messages=True))
