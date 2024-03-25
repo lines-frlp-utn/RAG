@@ -8,7 +8,8 @@
             "name": "Python Debugger: Module",
             "type": "debugpy",
             "request": "launch",
-            "module": "app.main.py"
+            "module": "app.main.py",
+            "console": "internalConsole"
         }
     ]
 }
