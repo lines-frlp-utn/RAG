@@ -118,6 +118,8 @@ async def start():
 
             #generar retriever
             # logger.info("retriever")
+
+            
             retriever = vectorstore.as_retriever(search_type="similarity",search_kwargs={"k":2})
 
             #cargar prompt
@@ -136,14 +138,11 @@ async def start():
 
             #runable
             # logger.info(f"runnable")
-            runnable = (
-                {"context": retriever | format_docs, "question": RunnablePassthrough()}
-                | prompt
-                | llm
-                | StrOutputParser()
-            )
+
+
+
             # logger.info(f"set runnable")
-            cl.user_session.set("runnable", runnable) #user_sesion.set nos permite guardar informacion a traves del ciclo de vida del chat
+            #cl.user_session.set("runnable", runnable) #user_sesion.set nos permite guardar informacion a traves del ciclo de vida del chat
 
             ##### backend
 
@@ -152,7 +151,10 @@ async def start():
                 timeout=500,
             ).send()
 
+            results = vectorstore.similarity_search(question['output'])
             retrieved_docs = retriever.invoke(question['output'])
+
+
 
         else:
             with open(text_file.path, "r", encoding="utf-8") as f:
@@ -231,3 +233,6 @@ async def main(message: cl.Message):
     memory.chat_memory.add_user_message(message.content)
     memory.chat_memory.add_ai_message(msg.content)
 
+if __name__ == "__main__":
+    from chainlit.cli import run_chainlit
+    run_chainlit(__file__)
