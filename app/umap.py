@@ -62,6 +62,6 @@ def make_umap(
     fig = go.Figure(
         data=[scatter_dataset, scatter_query, scatter_retrieved], layout=layout
     )
-    path = f"umap_embeddings/results/{session_number}.png"
+    path = f"umap_embeddings/umap_results/{session_number}.png"
     fig.write_image(path)
     return path
