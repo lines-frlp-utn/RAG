@@ -1,5 +1,5 @@
 import chainlit as cl
-from chromadb.errors import InvalidDimensionException
+from chainlit import make_async
 from langchain.memory import ConversationBufferMemory
 from langchain.vectorstores import Chroma
 
@@ -63,8 +63,6 @@ async def start():
                 search_type="similarity", search_kwargs={"k": 2}
             )
 
-            ##### backend
-
             question = await cl.AskUserMessage(
                 content=f"archivo '{text_file.name}' type: '{text_file.type}', size: {text_file.size}, N° chunks: {len(chunks)}, subido correctamente \n ya puedes hacer tu pregunta",
                 timeout=500,
@@ -79,10 +77,6 @@ async def start():
             cl.user_session.set("retriever", retriever)
             cl.user_session.set("vector_db", vector_db)
 
-        else:
-            with open(text_file.path, "r", encoding="utf-8") as f:
-                text = f.read()
-
         # Mostramos un mensaje donde simplemente decimos el nombre del archivo y la longitud de caractaeres
         await cl.Message(
             content=f"pregunta: {question['output']}, cantidad de chunks encontrados: {len(retrieved_docs)}\nchunk1: {retrieved_docs[0].page_content} \nchunk2: {retrieved_docs[1].page_content}"
@@ -95,10 +89,6 @@ async def main(message: cl.Message):
     retriever = cl.user_session.get("retriever")
     vector_db = cl.user_session.get("vector_db")
     session_number = cl.user_session.get("session_number")
-
-    actions = [
-        cl.Action(name="action_button", value="example_value", description="Click me!")
-    ]
 
     msg = cl.Message(content="")  # Muestra un loader mientras carga el mensaje
     await msg.send()
@@ -115,7 +105,7 @@ async def main(message: cl.Message):
         retrieved_embeddings = []
         for doc in results:
             retrieved_embeddings.append(embedding_model.embed_query(doc.page_content))
-        umap_path = make_umap(
+        umap_path = await cl.make_async(make_umap)(
             vector_db, retrieved_embeddings, query_embedding, query, session_number
         )
         msg.elements = [cl.Image(path=umap_path, name="umap", display="inline")]
@@ -123,9 +113,6 @@ async def main(message: cl.Message):
         query = message.content
         results = vector_db.similarity_search(query)
         msg.content = f"resultado: {results[0].page_content}"
-    msg.actions = (
-        actions  # cargamos las acciones del mensaje (boton de accion de demostracion)
-    )
 
     await msg.update()  # actualizamos el mensaje con los nuevos datos
 
