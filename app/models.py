@@ -5,7 +5,8 @@ from langchain.llms import CTransformers
 and can be used for tasks like clustering or semantic search.
 """
 EMB_SBERT_MINILM = "sentence-transformers/all-MiniLM-L6-v2"
-LLM_MISTRAL7B = "TheBloke/Mistral-7B-Instruct-v0.2-code-ft-GGUF"
+# LLM_MISTRAL7B = "TheBloke/Mistral-7B-Instruct-v0.2-code-ft-GGUF"
+LLM_MISTRAL7B = "TheBloke/Falcon-7B-Instruct-GGML"
 # C:\Users\usuario\.cache\huggingface\hub
 LLM_LLAMA_BLOKE = "TheBloke/Llama-2-13B-Ensemble-v5-GGUF"
 
@@ -19,12 +20,14 @@ config = {
     "temperature": 0.0,
     "top_k": 10,
 }
-# llm = CTransformers(
-#     model=LLM_MISTRAL7B,
-#     model_file="mistral-7b-instruct-v0.2-code-ft.Q5_K_M.gguf",
-#     model_type="llama",
-#     config=config,
-# )
+llm = CTransformers(
+    model=LLM_MISTRAL7B,
+    #model_file="mistral-7b-instruct-v0.2-code-ft.Q5_K_M.gguf",
+    model_file="falcon-7b-instruct.ggccv1.q4_0.bin",
+    model_type="falcon",
+    config=config,
+    gpu_layers=50,
+)
 
 prompt_template = """Conteste la siguiente pregunta basandose solamente en el contexto provisto:
 Si no sabes la respuesta, sólo di que no sabes, no trates de crearla. Siempre di "gracias por preguntar!".

@@ -3,6 +3,8 @@ from chainlit import make_async
 from langchain.memory import ConversationBufferMemory
 from langchain.vectorstores import Chroma
 
+from app.models import llm
+from app.models import prompt_template
 from app.models import embedding_model
 from app.splitter import pdf_to_chunks
 from app.umap import make_umap
@@ -63,14 +65,11 @@ async def start():
                 search_type="similarity", search_kwargs={"k": 2}
             )
 
-            question = await cl.AskUserMessage(
-                content=f"archivo '{text_file.name}' type: '{text_file.type}', size: {text_file.size}, N° chunks: {len(chunks)}, subido correctamente \n ya puedes hacer tu pregunta",
-                timeout=500,
-            ).send()
+            
 
             # results = vector_db.similarity_search(question['output'])
 
-            retrieved_docs = retriever.invoke(question["output"])
+            # retrieved_docs = retriever.invoke(question["output"])
 
             # prompt = prompt_template.format(context= results, question=question['output'])
 
@@ -79,7 +78,7 @@ async def start():
 
         # Mostramos un mensaje donde simplemente decimos el nombre del archivo y la longitud de caractaeres
         await cl.Message(
-            content=f"pregunta: {question['output']}, cantidad de chunks encontrados: {len(retrieved_docs)}\nchunk1: {retrieved_docs[0].page_content} \nchunk2: {retrieved_docs[1].page_content}"
+            content=f"archivo '{text_file.name}' type: '{text_file.type}', size: {text_file.size}, N° chunks: {len(chunks)}, subido correctamente \n ya puedes hacer tu pregunta"
         ).send()
 
 
@@ -112,7 +111,13 @@ async def main(message: cl.Message):
     else:
         query = message.content
         results = vector_db.similarity_search(query)
-        msg.content = f"resultado: {results[0].page_content}"
+        context = f"{results[0].page_content} {results[1].page_content}"
+        # for doc in results:
+        #     context = context + " " + doc.page_content
+        #lo de arriba me tiraba cosas raras en las respuestas
+        prompt = prompt_template.format(context= context, question= query)
+        respuesta = await cl.make_async(llm)(prompt)
+        msg.content = f"resultado: {respuesta}"
 
     await msg.update()  # actualizamos el mensaje con los nuevos datos
 
