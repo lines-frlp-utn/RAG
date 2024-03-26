@@ -8,4 +8,5 @@ langchain
 PyPDFLoader
 umap-learn
 plotly
+kaleido
 #faltan agregar las librerias del umap

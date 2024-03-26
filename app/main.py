@@ -54,20 +54,9 @@ async def start():
         text_file = files[0]
         if text_file.type == "application/pdf":
             chunks = pdf_to_chunks(text_file)
-
-            # logger.info("storing in chroma")
-            try:
-                vector_db = Chroma.from_documents(
-                    documents=chunks, embedding=embedding_model
-                )
-            except InvalidDimensionException:
-                # logger.info(f"invalid dimension exception")
-                vector_db.delete_collection()
-                vector_db = Chroma.from_documents(
-                    documents=chunks, embedding=embedding_model
-                )
-
-            # generar retriever
+            vector_db = Chroma.from_documents(
+                documents=chunks, embedding=embedding_model
+            )
             # logger.info("retriever")
 
             retriever = vector_db.as_retriever(
@@ -114,29 +103,26 @@ async def main(message: cl.Message):
     msg = cl.Message(content="")  # Muestra un loader mientras carga el mensaje
     await msg.send()
 
-    await cl.sleep(2)  # aca iria la logica del back-end (supongo)
     if message.elements:
-        images = [
-            file for file in message.elements if "image" in file.mime
-        ]  # preguntando se se ingreso una imagen en el mensaje.
-        with open(images[0].path, "r") as f:
-            pass
-        msg.elements = [cl.Image(path=images[0].path, name="image", display="inline")]
-
-    
+        chunks = pdf_to_chunks(message.elements[0])
+        vector_db = Chroma.from_documents(documents=chunks, embedding=embedding_model)
+        cl.user_session.set("vector_db", vector_db)
 
     if message.content.startswith("umap"):
         query = message.content[5:]
         query_embedding = embedding_model.embed_query(query)
+        results = vector_db.similarity_search(query)
+        retrieved_embeddings = []
+        for doc in results:
+            retrieved_embeddings.append(embedding_model.embed_query(doc.page_content))
         umap_path = make_umap(
-            vector_db, results, query_embedding, query, session_number
+            vector_db, retrieved_embeddings, query_embedding, query, session_number
         )
         msg.elements = [cl.Image(path=umap_path, name="umap", display="inline")]
-    else: 
+    else:
         query = message.content
         results = vector_db.similarity_search(query)
-
-    msg.content = f"resultado: {results[0].page_content}, {results[1].page_content}"
+        msg.content = f"resultado: {results[0].page_content}"
     msg.actions = (
         actions  # cargamos las acciones del mensaje (boton de accion de demostracion)
     )

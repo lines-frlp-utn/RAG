@@ -19,12 +19,12 @@ config = {
     "temperature": 0.0,
     "top_k": 10,
 }
-llm = CTransformers(
-    model=LLM_MISTRAL7B,
-    model_file="mistral-7b-instruct-v0.2-code-ft.Q5_K_M.gguf",
-    model_type="llama",
-    config=config,
-)
+# llm = CTransformers(
+#     model=LLM_MISTRAL7B,
+#     model_file="mistral-7b-instruct-v0.2-code-ft.Q5_K_M.gguf",
+#     model_type="llama",
+#     config=config,
+# )
 
 prompt_template = """Conteste la siguiente pregunta basandose solamente en el contexto provisto:
 Si no sabes la respuesta, sólo di que no sabes, no trates de crearla. Siempre di "gracias por preguntar!".
