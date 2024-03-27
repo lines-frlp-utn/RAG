@@ -1,11 +1,8 @@
 import chainlit as cl
-from chainlit import make_async
 from langchain.memory import ConversationBufferMemory
-from langchain.vectorstores import Chroma
+from langchain_community.vectorstores import Chroma
 
-from app.models import llm
-from app.models import prompt_template
-from app.models import embedding_model
+from app.models import embedding_model, llm, prompt_template
 from app.splitter import pdf_to_chunks
 from app.umap import make_umap
 
@@ -65,8 +62,6 @@ async def start():
                 search_type="similarity", search_kwargs={"k": 2}
             )
 
-            
-
             # results = vector_db.similarity_search(question['output'])
 
             # retrieved_docs = retriever.invoke(question["output"])
@@ -114,8 +109,8 @@ async def main(message: cl.Message):
         context = f"{results[0].page_content} {results[1].page_content}"
         # for doc in results:
         #     context = context + " " + doc.page_content
-        #lo de arriba me tiraba cosas raras en las respuestas
-        prompt = prompt_template.format(context= context, question= query)
+        # lo de arriba me tiraba cosas raras en las respuestas
+        prompt = prompt_template.format(context=context, question=query)
         respuesta = await cl.make_async(llm)(prompt)
         msg.content = f"resultado: {respuesta}"
 
