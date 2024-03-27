@@ -2,6 +2,7 @@ chainlit
 transformers==4.34.0
 sentence-transformers
 ctransformers
+ctransformers[cuda]
 chromadb
 langchain-community
 langchain
