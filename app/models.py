@@ -6,7 +6,8 @@ and can be used for tasks like clustering or semantic search.
 """
 
 EMB_SBERT_MINILM = "sentence-transformers/all-MiniLM-L6-v2"
-LLM_MISTRAL7B = "TheBloke/CapybaraHermes-2.5-Mistral-7B-GPTQ"
+EMB_MULTI_MINILM = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+LLM_MISTRAL7B = "TheBloke/Mistral-7B-Instruct-v0.2-code-ft-GGUF"
 LLM_FALCON7B = "TheBloke/Falcon-7B-Instruct-GGML"
 # C:\Users\usuario\.cache\huggingface\hub
 LLM_LLAMA_BLOKE = "TheBloke/Llama-2-13B-Ensemble-v5-GGUF"
@@ -29,6 +30,17 @@ llm = CTransformers(
     config=config,
     gpu_layers=50,
 )
+
+prompt_template_english = """Answer the following question based only on the provided context:
+If you do not know the answer, please answer that you do not know the answer, do not try to create an answer. Always finish the answer with "Thanks for asking!"
+If the question is out of context, Kindly inform that you were not trained for that question.
+If the context is not relevant to answer the question, please do not answer using your own knowlege.
+<context>
+{context}
+</context>
+
+Question: {question}
+"""
 
 prompt_template = """Conteste la siguiente pregunta basandose solamente en el contexto provisto:
 Si no sabes la respuesta, sólo di que no sabes, no trates de crearla. Siempre di "gracias por preguntar!".
