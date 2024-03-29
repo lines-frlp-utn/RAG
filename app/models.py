@@ -8,11 +8,10 @@ and can be used for tasks like clustering or semantic search.
 EMB_SBERT_MINILM = "sentence-transformers/all-MiniLM-L6-v2"
 EMB_MULTI_MINILM = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 LLM_MISTRAL7B = "TheBloke/Mistral-7B-Instruct-v0.2-code-ft-GGUF"
-LLM_FALCON7B = "TheBloke/Falcon-7B-Instruct-GGML"
 # C:\Users\usuario\.cache\huggingface\hub
 LLM_LLAMA_BLOKE = "TheBloke/Llama-2-13B-Ensemble-v5-GGUF"
 
-embedding_model = SentenceTransformerEmbeddings(model_name=EMB_SBERT_MINILM)
+embedding_model = SentenceTransformerEmbeddings(model_name=EMB_MULTI_MINILM)
 
 """Creates the LLMS model that will generate contextualized embeddings"""
 config = {
@@ -23,10 +22,9 @@ config = {
     "top_k": 10,
 }
 llm = CTransformers(
-    model=LLM_FALCON7B,
-    # model_file="mistral-7b-instruct-v0.2-code-ft.Q5_K_M.gguf",
-    model_file="falcon-7b-instruct.ggccv1.q4_0.bin",
-    model_type="falcon",
+    model=LLM_MISTRAL7B,
+    model_file="mistral-7b-instruct-v0.2-code-ft.Q5_K_M.gguf",
+    model_type="llama",
     config=config,
     gpu_layers=50,
 )
@@ -53,4 +51,4 @@ Si el contexto no es relevante para contestar la pregunta, por favor no conteste
 
 Pregunta: {question}"""
 
-print(llm.invoke("responde en espanol. donde queda europa?"))
+# print(llm.invoke("responde en espanol. donde queda europa?"))
