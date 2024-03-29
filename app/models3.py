@@ -12,8 +12,8 @@ tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=True)
 
 prompt = "cuales son las leyes de la fisica?"
 system_message = "Sos un chatbot virtual"
-prompt_template = f"""<|im_start|>systema
-{system_message}<|im_end|>
+prompt_template = """<|im_start|>sistema sos un chatbot virtual. contexto:
+{context}<|im_end|>
 <|im_start|>usuario
 {prompt}<|im_end|>
 <|im_start|>asistente
@@ -30,6 +30,5 @@ pipe = pipeline(
     top_p=0.95,
     top_k=40,
     repetition_penalty=1.1,
+    return_full_text=False,
 )
-
-print(pipe(prompt_template)[0]["generated_text"])
