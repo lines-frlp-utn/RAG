@@ -1,4 +1,7 @@
+import fastapi
 from llama_cpp import Llama
+
+app = fastapi.FastAPI()
 
 # https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-code-ft-GGUF
 llm = Llama(
@@ -24,10 +27,15 @@ config = {
 }
 
 
-def get_response(context, prompt):
+def get_response(prompt, context):
     output = llm(
         prompt_template.format(context=context, prompt=prompt),
         stop=["<|im_end|>"],
         **config,
     )
     return output["choices"][0]["text"]
+
+
+@app.post("/submit-prompt")
+def generate_answer(prompt: str, context: str = None):
+    return get_response(prompt, context)
