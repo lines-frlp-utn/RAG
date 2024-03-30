@@ -2,7 +2,7 @@ import chainlit as cl
 from langchain.memory import ConversationBufferMemory
 from langchain_community.vectorstores import Chroma
 
-from app.models import embedding_model, llm, prompt_template
+from app.models import embedding_model, get_conversational_answer
 from app.splitter import pdf_to_chunks
 from app.umap import make_umap
 
@@ -56,19 +56,9 @@ async def start():
             vector_db = Chroma.from_documents(
                 documents=chunks, embedding=embedding_model
             )
-            # logger.info("retriever")
-
-            retriever = vector_db.as_retriever(
-                search_type="similarity", search_kwargs={"k": 2}
-            )
 
             # results = vector_db.similarity_search(question['output'])
 
-            # retrieved_docs = retriever.invoke(question["output"])
-
-            # prompt = prompt_template.format(context= results, question=question['output'])
-
-            cl.user_session.set("retriever", retriever)
             cl.user_session.set("vector_db", vector_db)
 
         # Mostramos un mensaje donde simplemente decimos el nombre del archivo y la longitud de caractaeres
@@ -80,7 +70,6 @@ async def start():
 # decorator que define lo que sucede cuando el usuario envia un mensaje
 @cl.on_message
 async def main(message: cl.Message):
-    retriever = cl.user_session.get("retriever")
     vector_db = cl.user_session.get("vector_db")
     session_number = cl.user_session.get("session_number")
 
@@ -107,12 +96,9 @@ async def main(message: cl.Message):
         query = message.content
         results = vector_db.similarity_search(query)
         context = f"{results[0].page_content} {results[1].page_content}"
-        # for doc in results:
-        #     context = context + " " + doc.page_content
-        # lo de arriba me tiraba cosas raras en las respuestas
-        prompt = prompt_template.format(context=context, question=query)
-        respuesta = await cl.make_async(llm)(prompt)
-        msg.content = f"resultado: {respuesta}"
+        print(context)
+        respuesta = await cl.make_async(get_conversational_answer)(query, context)
+        msg.content = f"{respuesta}"
 
     await msg.update()  # actualizamos el mensaje con los nuevos datos
 
