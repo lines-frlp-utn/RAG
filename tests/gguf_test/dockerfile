@@ -1,0 +1,23 @@
+FROM nvidia/cuda:12.3.2-devel-ubuntu22.04
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the current directory contents into the container at /app
+COPY main.py /app
+
+# Install Python and pip
+RUN apt-get update && apt-get install -y python3 python3-pip
+
+# Set environment variable
+ENV CMAKE_ARGS="-DLLAMA_CUBLAS=ON"
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install llama-cpp-python
+
+RUN pip3 install huggingface-hub
+RUN huggingface-cli download TheBloke/Mistral-7B-Instruct-v0.2-code-ft-GGUF mistral-7b-instruct-v0.2-code-ft.Q4_K_M.gguf --local-dir . --local-dir-use-symlinks False
+
+# Command to run the server
+CMD ["python3", "./main.py"]
