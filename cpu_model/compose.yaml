@@ -1,9 +1,9 @@
-services:
+version: '3'
 
-  cpu_model:
-    image: llm-cpu-model
+services:
+  llm-cpu-model:
+    build: .
     ports:
       - 8007:8007
-    build:
-      context: cpu_model
-      dockerfile: dockerfile
+    image: llm-cpu-model
+  
