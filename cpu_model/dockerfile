@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir --upgrade pip
 WORKDIR /app
 
 RUN pip3 install huggingface-hub
-RUN huggingface-cli download aloobun/Reyna-Mini-1.8B-v0.2 Reyna-Mini-1.8B-v0.2 --local-dir . --local-dir-use-symlinks False
+RUN huggingface-cli download aloobun/Reyna-Mini-1.8B-v0.2 --local-dir . --local-dir-use-symlinks False
 
 COPY requirements.txt /app
 RUN pip install --no-cache-dir -r requirements.txt
