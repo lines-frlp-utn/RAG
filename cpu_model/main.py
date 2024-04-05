@@ -1,6 +1,6 @@
 import fastapi
-from langchain_community.embeddings import SentenceTransformerEmbeddings
-from langchain_community.llms import CTransformers
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 app = fastapi.FastAPI()
 
@@ -8,7 +8,7 @@ app = fastapi.FastAPI()
 and can be used for tasks like clustering or semantic search.
 """
 
-LLM_REYNA_MINI = "aloobun/Reyna-Mini-1.8B-v0.2"
+LLM_REYNA_MINI = "."
 # C:\Users\usuario\.cache\huggingface\hub
 
 """Creates the LLMS model that will generate contextualized embeddings"""
@@ -19,13 +19,21 @@ config = {
     "temperature": 0.0,
     "top_k": 10,
 }
-llm = CTransformers(
-    model=LLM_REYNA_MINI,
-    model_file="./Reyna-Mini-1.8B-v0.2",
-    model_type="llama",
-    config=config,
-    gpu_layers=50,
+
+modelpath = "."
+
+model = AutoModelForCausalLM.from_pretrained(
+    modelpath,
+    torch_dtype=torch.bfloat16,
+    trust_remote_code=True,
 )
+
+tokenizer = AutoTokenizer.from_pretrained(
+    modelpath,
+    trust_remote_code=True,
+    use_fast=False,
+)
+llm = pipeline("text-generation", model=model, tokenizer=tokenizer)
 
 prompt_template = """  <|im_start|>system\n Conteste la siguiente pregunta basandose solamente en el contexto provisto,
 Si no sabes la respuesta, sólo di que no sabes, no trates de crearla. Siempre di "gracias por preguntar!".
@@ -36,6 +44,7 @@ Si el contexto no es relevante para contestar la pregunta, por favor no conteste
 {prompt}<|im_end|>
 <|im_start|>assistant
 """
+
 
 def get_response(prompt, context):
     output = llm(

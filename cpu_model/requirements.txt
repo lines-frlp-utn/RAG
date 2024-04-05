@@ -1,7 +1,7 @@
 langchain
 langchain-community
 ctransformers
-transformers==4.34.0
+transformers
 sentence-transformers
 fastapi
 uvicorn

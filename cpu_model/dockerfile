@@ -1,12 +1,10 @@
-FROM ubuntu:20.04
+FROM python
 
-RUN apt-get update && apt-get install -y python3 python3-pip
-
-RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir huggingface-hub
 
 WORKDIR /app
 
-RUN pip3 install huggingface-hub
 RUN huggingface-cli download aloobun/Reyna-Mini-1.8B-v0.2 --local-dir . --local-dir-use-symlinks False
 
 COPY requirements.txt /app
@@ -14,4 +12,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY main.py /app
 
-CMD ["python3", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8007", "--reload"]
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8007", "--reload"]
