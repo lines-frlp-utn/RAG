@@ -4,20 +4,16 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 app = fastapi.FastAPI()
 
-"""This model maps sentences & paragraphs to a 384 dimensional dense vector space
-and can be used for tasks like clustering or semantic search.
-"""
-
-LLM_REYNA_MINI = "."
 # C:\Users\usuario\.cache\huggingface\hub
 
 """Creates the LLMS model that will generate contextualized embeddings"""
 config = {
     "context_length": 1700,
-    "max_new_tokens": 256,
+    "max_new_tokens": 512,
     "repetition_penalty": 1.1,
     "temperature": 0.0,
     "top_k": 10,
+    "stop":["<|im_end|>"],
 }
 
 modelpath = "."
@@ -33,7 +29,7 @@ tokenizer = AutoTokenizer.from_pretrained(
     trust_remote_code=True,
     use_fast=False,
 )
-llm = pipeline("text-generation", model=model, tokenizer=tokenizer)
+llm = pipeline("text-generation", model=model, tokenizer=tokenizer, model_kwargs=config)
 
 prompt_template = """  <|im_start|>system\n Conteste la siguiente pregunta basandose solamente en el contexto provisto,
 Si no sabes la respuesta, sólo di que no sabes, no trates de crearla. Siempre di "gracias por preguntar!".
@@ -49,9 +45,13 @@ Si el contexto no es relevante para contestar la pregunta, por favor no conteste
 def get_response(prompt, context):
     output = llm(
         prompt_template.format(context=context, prompt=prompt),
-        stop=["<|im_end|>"],
+        max_new_tokens=400,
+        return_full_text=False,
+        repetition_penalty=1.1,
+        temperature=0.1,
+        top_k=10,
     )
-    return output
+    return output[0]["generated_text"]
 
 
 @app.post("/submit-prompt")
