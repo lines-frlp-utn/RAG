@@ -9,6 +9,18 @@
             "type": "debugpy",
             "request": "launch",
             "module": "app.main"
+        },
+        {
+            "name": "CPU llm",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "cpu_model.main:app",
+                "--reload",
+                "--port",
+                "8007"
+            ],
         }
     ]
 }
