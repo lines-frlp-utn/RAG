@@ -100,21 +100,27 @@ async def main(message: cl.Message):
         chunks = pdf_to_chunks(message.elements[0])
         vector_db = Chroma.from_documents(documents=chunks, embedding=embedding_model)
         cl.user_session.set("vector_db", vector_db)
-
-    if message.content.startswith("umap"):
-        query = message.content[5:]
-        query_embedding = embedding_model.embed_query(query)
-        results = vector_db.similarity_search(query)
-        retrieved_embeddings = []
-        for doc in results:
-            retrieved_embeddings.append(embedding_model.embed_query(doc.page_content))
-        umap_path = await cl.make_async(make_umap)(
-            vector_db, retrieved_embeddings, query_embedding, query, session_number
-        )
-        msg.elements = [cl.Image(path=umap_path, name="umap", display="inline")]
+        
+    if vector_db is not None:
+        if message.content.startswith("umap"):
+            query = message.content[5:]
+            query_embedding = embedding_model.embed_query(query)
+            results = vector_db.similarity_search(query)
+            retrieved_embeddings = []
+            for doc in results:
+                retrieved_embeddings.append(embedding_model.embed_query(doc.page_content))
+            umap_path = await cl.make_async(make_umap)(
+                vector_db, retrieved_embeddings, query_embedding, query, session_number
+            )
+            msg.elements = [cl.Image(path=umap_path, name="umap", display="inline")]
+        else:
+            query = message.content
+            context = await vectordb_results_step(vector_db, query)
+            respuesta = await llm_step(query, context)
+            msg.content = f"{respuesta}"
     else:
         query = message.content
-        context = await vectordb_results_step(vector_db, query)
+        context = "Sos un asistente virtual, responde la siguiente pregunta"
         respuesta = await llm_step(query, context)
         msg.content = f"{respuesta}"
 
