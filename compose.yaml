@@ -1,4 +1,17 @@
+version: '3.8'
+
 services:
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    volumes:
+      - rag-volume:/app/data
+    networks:
+      - lines-network
 
   llm-model:
     image: llm-model
@@ -7,6 +20,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8007:8007
+    networks:
+      - lines-network
     deploy:
       resources:
         reservations:
@@ -14,3 +29,12 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+
+
+networks:
+  lines-network:
+    driver: bridge
+
+volumes:
+  rag-volume:
+    driver: local
