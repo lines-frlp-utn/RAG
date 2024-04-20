@@ -9,7 +9,7 @@ services:
     ports:
       - 8000:8000
     volumes:
-      - rag-volume:/app/data
+      - rag-volume:/app/database
     networks:
       - lines-network
 
