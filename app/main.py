@@ -1,10 +1,13 @@
 import chainlit as cl
 from langchain.memory import ConversationBufferMemory
 
+from app.uploader import get_context_with_filters
 from app.models import embedding_model, get_conversational_answer
 from app.splitter import pdf_to_chunks
 from app.umap import make_umap
 from app.vector_db import vector_db
+from chainlit.input_widget import Select, Switch, Slider
+
 
 
 def format_docs(docs):
@@ -16,11 +19,38 @@ async def start():
     cl.user_session.set("session_number", 1)
 
     cl.user_session.set("memory", ConversationBufferMemory(return_messages=True))
+    settings = await cl.ChatSettings(
+        [
+            Select(
+                id="collection",
+                label="collection",
+                values=["CryptoCurrency",],
+                initial_index=0,
+            ),
+            Select(
+                id="theme",
+                label="theme",
+                values=["-","Bitcoin", "Ethereum", "Dot"],
+                initial_index=0,
+            ),
+            Select(
+                id="subtheme",
+                label="subtheme",
+                values=["-"],
+                initial_index=0,
+            ),
+        ]
+    ).send()
+    await update_settings(settings)
 
+@cl.on_settings_update
+async def update_settings(settings):
+    cl.user_session.set("settings", settings)
 
 @cl.step
-async def vectordb_results_step(vector_db, query):
-    results = vector_db.similarity_search(query)
+async def vectordb_results_step(query):
+    settings = cl.user_session.get("settings")
+    results = get_context_with_filters(settings["collection"], settings["theme"], settings["subtheme"], query)
     cl.context.current_step.output = results
     context = await context_step(results)
     return context
@@ -31,7 +61,7 @@ async def context_step(results):
     context = ""
     for doc in results:
         context = f"{context} {doc.page_content}"
-    # context = f"{results[0].page_content} {results[1].page_content}"
+
     cl.context.current_step.output = context
     return context
 
@@ -45,14 +75,16 @@ async def llm_step(query, context):
 @cl.on_message
 async def main(message: cl.Message):
     session_number = cl.user_session.get("session_number")
+     
 
     msg = cl.Message(content="")  # Muestra un loader mientras carga el mensaje
     await msg.send()
 
+     
     if message.elements:
         chunks = pdf_to_chunks(message.elements[0])
         vector_db.add_documents(chunks)
-
+         #porque no se selecciono ningun theme en los settings
     if message.content.startswith("umap"):
         query = message.content[5:]
         query_embedding = embedding_model.embed_query(query)
@@ -62,11 +94,11 @@ async def main(message: cl.Message):
             retrieved_embeddings.append(embedding_model.embed_query(doc.page_content))
         umap_path = await cl.make_async(make_umap)(
             vector_db, retrieved_embeddings, query_embedding, query, session_number
-        )
+        ) #TODO: Arreglar porque ya no tenemos vector_db, tenemos retriever, capaz en uploader habria que hacer otra funcion que traiga la coleccion
         msg.elements = [cl.Image(path=umap_path, name="umap", display="inline")]
     else:
         query = message.content
-        context = await vectordb_results_step(vector_db, query)
+        context = await vectordb_results_step(query)
         respuesta = await llm_step(query, context)
         msg.content = f"{respuesta}"
 
