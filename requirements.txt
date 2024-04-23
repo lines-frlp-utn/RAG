@@ -6,4 +6,5 @@ pypdf
 umap-learn
 plotly
 kaleido
+pydantic-settings
 #faltan agregar las librerias del umap
