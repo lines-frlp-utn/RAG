@@ -24,7 +24,7 @@ async def start():
             Select(
                 id="collection",
                 label="collection",
-                values=["CryptoCurrency",],
+                values=[" ","CryptoCurrency",],
                 initial_index=0,
             ),
             Select(

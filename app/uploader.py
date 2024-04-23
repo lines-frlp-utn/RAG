@@ -25,27 +25,19 @@ def upload_pdf_to_database(text_file, theme, subtheme, collection_name):
     print(text_file + " cargado correctamente...")
 
 def get_context_with_filters(collection_name, theme, subtheme, query):
-
-    collection = Chroma(
-        collection_name=collection_name,
-        embedding_function=embedding_model,
-        persist_directory="./database/"
-    )
-    if theme != "-":
-        retriever = collection.as_retriever(search_kwargs={"filter":{"theme":theme}}, search_type="similarity")
-    else:
-        retriever = collection.as_retriever(search_type="similarity")
+    if collection_name != " ":
+        collection = Chroma(
+            collection_name=collection_name,
+            embedding_function=embedding_model,
+            persist_directory="./database/"
+        )
     
+        if theme != "-":
+            retriever = collection.as_retriever(search_kwargs={"filter":{"theme":theme}}, search_type="similarity")
+        else:
+            retriever = collection.as_retriever(search_type="similarity")
+    else:
+        return []
     response = retriever.get_relevant_documents(query)
     
     return response
-    # response = retriever.get_relevant_documents(query)
-
-    # if response is None:
-    #     response = collection.similarity_search(query)
-
-    # return response
-
-# upload_pdf_to_database("../tests/pdfs_prueba/bitcoin_es.pdf", theme="Bitcoin", subtheme="", collection_name="CryptoCurrency")
-# upload_pdf_to_database("../tests/pdfs_prueba/Ethereum.pdf", theme="Ethereum", subtheme="", collection_name="CryptoCurrency")
-# get_context_with_filters(collection_name="CryptoCurrency", theme="Bitcoin", subtheme="", query="como funciona bitcoin")
