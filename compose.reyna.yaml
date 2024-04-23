@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    environment:
+      - MODEL_URL=http://model-reyna
+      - MODEL_PORT=8007
+    volumes:
+      - rag-volume:/app/database
+    networks:
+      - lines-network
+
+
+  model-reyna:
+    image: reyna
+    build:
+      context: llm_models/reyna
+      dockerfile: Dockerfile
+    ports:
+      - 8007:8007
+  
+
+networks:
+  lines-network:
+    driver: bridge
+
+volumes:
+  rag-volume:
+    driver: local

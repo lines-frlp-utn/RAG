@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3'
 
 services:
 
@@ -8,20 +8,24 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8000:8000
+    environment:
+      - MODEL_URL=http://model-llama
+      - MODEL_PORT=8007
     volumes:
       - rag-volume:/app/database
     networks:
       - lines-network
 
-  llm-model:
-    image: llm-model
+  model-llama:
+    image: llama3
     build:
-      context: gguf_model
+      context: llm_models/llama3
       dockerfile: Dockerfile
     ports:
       - 8007:8007
     networks:
       - lines-network
+
     deploy:
       resources:
         reservations:
