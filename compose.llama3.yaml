@@ -4,7 +4,7 @@ services:
 
   app:
     build:
-      context: .
+      context: chainlit_app/
       dockerfile: Dockerfile
     ports:
       - 8000:8000

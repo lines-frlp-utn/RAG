@@ -9,7 +9,7 @@
             "type": "debugpy",
             "request": "launch",
             "module": "app.main",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}/chainlit_app"
         },
         {
             "name": "CPU llm",
@@ -17,7 +17,7 @@
             "request": "launch",
             "module": "uvicorn",
             "args": [
-                "cpu_model.main:app",
+                "llm_models.reyna_cpu.main:app",
                 "--reload",
                 "--port",
                 "8007"

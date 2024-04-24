@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiamos todo el contenido del directorio app al directorio de trabajo
 COPY app app
 
+COPY .chainlit chainlit.md .chainlit/
+
 #EXPONEMOS EL PUERTO
 EXPOSE 8000
 
