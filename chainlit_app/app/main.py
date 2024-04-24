@@ -1,14 +1,12 @@
 import chainlit as cl
 from langchain.memory import ConversationBufferMemory
 
-from app.uploader import get_context_with_filters
+from app.uploader import get_context_with_filters, get_db
 from app.models import embedding_model, get_conversational_answer
 from app.splitter import pdf_to_chunks
-from app.umap import make_umap
+from app.chunk_visualization import make_umap
 from app.vector_db import vector_db
 from chainlit.input_widget import Select, Switch, Slider
-
-
 
 def format_docs(docs):
     return "\n\n".join([d.page_content for d in docs])
@@ -75,7 +73,7 @@ async def llm_step(query, context):
 @cl.on_message
 async def main(message: cl.Message):
     session_number = cl.user_session.get("session_number")
-     
+    settings = cl.user_session.get("settings")
 
     msg = cl.Message(content="")  # Muestra un loader mientras carga el mensaje
     await msg.send()
@@ -83,17 +81,21 @@ async def main(message: cl.Message):
      
     if message.elements:
         chunks = pdf_to_chunks(message.elements[0])
-        vector_db.add_documents(chunks)
-         #porque no se selecciono ningun theme en los settings
+        vector_db.from_documents(
+            documents=chunks,
+            embedding=embedding_model,
+        )
+        
     if message.content.startswith("umap"):
+        v_db = get_db(settings["collection"]) if settings["collection"] != " " else vector_db
         query = message.content[5:]
         query_embedding = embedding_model.embed_query(query)
-        results = vector_db.similarity_search(query)
+        results = get_context_with_filters(settings["collection"], settings["theme"], settings["subtheme"], query) if settings["collection"] != " " else v_db.similarity_search(query)
         retrieved_embeddings = []
         for doc in results:
             retrieved_embeddings.append(embedding_model.embed_query(doc.page_content))
         umap_path = await cl.make_async(make_umap)(
-            vector_db, retrieved_embeddings, query_embedding, query, session_number
+            v_db, retrieved_embeddings, query_embedding, query, session_number
         ) #TODO: Arreglar porque ya no tenemos vector_db, tenemos retriever, capaz en uploader habria que hacer otra funcion que traiga la coleccion
         msg.elements = [cl.Image(path=umap_path, name="umap", display="inline")]
     else:

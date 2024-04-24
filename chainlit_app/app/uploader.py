@@ -41,3 +41,11 @@ def get_context_with_filters(collection_name, theme, subtheme, query):
     response = retriever.get_relevant_documents(query)
     
     return response
+
+def get_db(collection_name):
+    if collection_name != " ":
+        return Chroma(
+            collection_name=collection_name,
+            embedding_function=embedding_model,
+            persist_directory="./database/"
+        )
