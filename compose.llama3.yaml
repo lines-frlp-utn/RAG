@@ -25,7 +25,6 @@ services:
       - 8007:8007
     networks:
       - lines-network
-
     deploy:
       resources:
         reservations:

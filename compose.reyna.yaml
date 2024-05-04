@@ -2,7 +2,6 @@ version: '3'
 
 services:
 
-
   app:
     build:
       context: chainlit_app/
@@ -26,7 +25,7 @@ services:
     ports:
       - 8007:8007
     networks:
-    - lines-network
+      - lines-network
   
 
 networks:
