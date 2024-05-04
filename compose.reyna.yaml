@@ -21,10 +21,12 @@ services:
   model-reyna:
     image: reyna
     build:
-      context: llm_models/reyna
+      context: llm_models/reyna_cpu
       dockerfile: Dockerfile
     ports:
       - 8007:8007
+    networks:
+    - lines-network
   
 
 networks:
