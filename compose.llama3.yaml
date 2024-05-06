@@ -12,7 +12,7 @@ services:
       - MODEL_URL=http://model-llama
       - MODEL_PORT=8007
     volumes:
-      - rag-volume:/app/database
+      - rag-volume:/chainlit_app/database
     networks:
       - lines-network
 
