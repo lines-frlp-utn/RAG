@@ -7,4 +7,6 @@ umap-learn
 plotly
 kaleido
 pydantic-settings
+llmsherpa
+# unstructured
 #faltan agregar las librerias del umap
