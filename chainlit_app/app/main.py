@@ -1,7 +1,7 @@
 import chainlit as cl
 from langchain.memory import ConversationBufferMemory
 
-from app.uploader import get_context_with_filters, get_db, upload_pdf_to_database
+from app.uploader import get_context_with_filters, get_db
 from app.models import embedding_model, get_conversational_answer
 from app.splitter import pdf_to_chunks
 from app.chunk_visualization import make_umap
@@ -22,13 +22,13 @@ async def start():
             Select(
                 id="collection",
                 label="collection",
-                values=["prueba_lines",],
+                values=[" ","CryptoCurrency",],
                 initial_index=0,
             ),
             Select(
                 id="theme",
                 label="theme",
-                values=["-",],
+                values=["-","Bitcoin", "Ethereum", "Dot"],
                 initial_index=0,
             ),
             Select(
@@ -40,28 +40,6 @@ async def start():
         ]
     ).send()
     await update_settings(settings)
-
-    files = None
-    while files == None:
-        files = await cl.AskFileMessage(
-            content="Por favor suba un archivo PDF para continuar!",
-            accept=["application/pdf"],
-            max_size_mb=20,
-            timeout=180,
-        ).send()
-
-    file = files[0]    
-    msg = cl.Message(content=f"Procesando archivo `{file.name}`...", disable_feedback=True)
-    await msg.send()
-
-    upload_pdf_to_database(
-        text_file= file.path,
-        theme="-", 
-        subtheme="-", 
-        collection_name="prueba_lines",)
-    
-    msg.content =f"Archivo `{file.name}` cargado exitosamente"
-    await msg.update()
 
 @cl.on_settings_update
 async def update_settings(settings):
@@ -102,12 +80,11 @@ async def main(message: cl.Message):
 
      
     if message.elements:
-        file = pdf_to_chunks(message.elements[0])
-        upload_pdf_to_database(
-        text_file= file.path,
-        theme="-", 
-        subtheme="-", 
-        collection_name="prueba_lines",)
+        chunks = pdf_to_chunks(message.elements[0])
+        vector_db.from_documents(
+            documents=chunks,
+            embedding=embedding_model,
+        )
         
     if message.content.startswith("umap"):
         v_db = get_db(settings["collection"]) if settings["collection"] != " " else vector_db
@@ -119,7 +96,7 @@ async def main(message: cl.Message):
             retrieved_embeddings.append(embedding_model.embed_query(doc.page_content))
         umap_path = await cl.make_async(make_umap)(
             v_db, retrieved_embeddings, query_embedding, query, session_number
-        )
+        ) #TODO: Arreglar porque ya no tenemos vector_db, tenemos retriever, capaz en uploader habria que hacer otra funcion que traiga la coleccion
         msg.elements = [cl.Image(path=umap_path, name="umap", display="inline")]
     else:
         query = message.content
