@@ -1,13 +1,12 @@
 import requests
-from langchain_community.embeddings import SentenceTransformerEmbeddings
-
 from app.config import conf
+from langchain_community.embeddings import SentenceTransformerEmbeddings
 
 """This model maps sentences & paragraphs to a 384 dimensional dense vector space
 and can be used for tasks like clustering or semantic search.
 """
 
-EMB_MULTI_MINILM = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+EMB_MULTI_MINILM = "sentence-transformers/distiluse-base-multilingual-cased-v2"
 
 embedding_model = SentenceTransformerEmbeddings(model_name=EMB_MULTI_MINILM)
 
