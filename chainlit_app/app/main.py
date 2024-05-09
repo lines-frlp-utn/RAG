@@ -1,12 +1,12 @@
 import chainlit as cl
-from langchain.memory import ConversationBufferMemory
-
-from app.uploader import get_context_with_filters, get_db, upload_pdf_to_database
+from app.chunk_visualization import make_umap
 from app.models import embedding_model, get_conversational_answer
 from app.splitter import pdf_to_chunks
-from app.chunk_visualization import make_umap
+from app.uploader import get_context_with_filters, get_db, upload_pdf_to_database
 from app.vector_db import vector_db
-from chainlit.input_widget import Select, Switch, Slider
+from chainlit.input_widget import Select, Slider, Switch
+from langchain.memory import ConversationBufferMemory
+
 
 def format_docs(docs):
     return "\n\n".join([d.page_content for d in docs])
@@ -22,13 +22,17 @@ async def start():
             Select(
                 id="collection",
                 label="collection",
-                values=["prueba_lines",],
+                values=[
+                    "prueba_lines",
+                ],
                 initial_index=0,
             ),
             Select(
                 id="theme",
                 label="theme",
-                values=["-",],
+                values=[
+                    "-",
+                ],
                 initial_index=0,
             ),
             Select(
@@ -50,27 +54,28 @@ async def start():
             timeout=180,
         ).send()
 
-    file = files[0]    
+    file = files[0]
     msg = cl.Message(content=f"Procesando archivo `{file.name}`...", disable_feedback=True)
     await msg.send()
+    await cl.make_async(upload_pdf_to_database)(
+        text_file=file.path, theme="-", subtheme="-", collection_name="prueba_lines"
+    )
 
-    upload_pdf_to_database(
-        text_file= file.path,
-        theme="-", 
-        subtheme="-", 
-        collection_name="prueba_lines",)
-    
-    msg.content =f"Archivo `{file.name}` cargado exitosamente"
+    msg.content = f"Archivo `{file.name}` cargado exitosamente"
     await msg.update()
+
 
 @cl.on_settings_update
 async def update_settings(settings):
     cl.user_session.set("settings", settings)
 
+
 @cl.step
 async def vectordb_results_step(query):
     settings = cl.user_session.get("settings")
-    results = get_context_with_filters(settings["collection"], settings["theme"], settings["subtheme"], query)
+    results = get_context_with_filters(
+        settings["collection"], settings["theme"], settings["subtheme"], query
+    )
     cl.context.current_step.output = results
     context = await context_step(results)
     return context
@@ -100,20 +105,26 @@ async def main(message: cl.Message):
     msg = cl.Message(content="")  # Muestra un loader mientras carga el mensaje
     await msg.send()
 
-     
     if message.elements:
         file = pdf_to_chunks(message.elements[0])
         upload_pdf_to_database(
-        text_file= file.path,
-        theme="-", 
-        subtheme="-", 
-        collection_name="prueba_lines",)
-        
+            text_file=file.path,
+            theme="-",
+            subtheme="-",
+            collection_name="prueba_lines",
+        )
+
     if message.content.startswith("umap"):
         v_db = get_db(settings["collection"]) if settings["collection"] != " " else vector_db
         query = message.content[5:]
         query_embedding = embedding_model.embed_query(query)
-        results = get_context_with_filters(settings["collection"], settings["theme"], settings["subtheme"], query) if settings["collection"] != " " else v_db.similarity_search(query)
+        results = (
+            get_context_with_filters(
+                settings["collection"], settings["theme"], settings["subtheme"], query
+            )
+            if settings["collection"] != " "
+            else v_db.similarity_search(query)
+        )
         retrieved_embeddings = []
         for doc in results:
             retrieved_embeddings.append(embedding_model.embed_query(doc.page_content))

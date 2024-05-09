@@ -1,27 +1,28 @@
 from app.models import embedding_model
-from chromadb import PersistentClient
 from app.parser import prepare_chunks_from_docs
+from chromadb import PersistentClient
 from langchain_community.vectorstores import Chroma
 
 client = PersistentClient("./database/")
 
+
 def upload_pdf_to_database(text_file, theme, subtheme, collection_name):
-    
+    client.get_or_create_collection(collection_name)
+    vector_db = Chroma(
+        client=client,
+        collection_name=collection_name,
+        embedding_function=embedding_model,
+    )
     chunks = prepare_chunks_from_docs(
-        file_path=text_file, 
-        theme=theme, 
+        file_path=text_file,
+        theme=theme,
         subtheme=subtheme,
     )
 
     for chunk in chunks:
         print(chunk)
 
-    Chroma.from_documents(
-        documents=chunks,
-        embedding=embedding_model,
-        collection_name=collection_name,
-        client=client,
-    )
+    vector_db.add_documents(chunks)
 
     print(text_file + " cargado correctamente...")
 
