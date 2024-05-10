@@ -39,7 +39,7 @@ multi_modal.enabled  = true
 
 [UI]
 # Name of the app and chatbot.
-name = "Chatbot"
+name = "LINES DOCUMENT QA"
 
 # Show the readme while the thread is empty.
 show_readme_as_default = true
