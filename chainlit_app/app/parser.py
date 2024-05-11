@@ -3,7 +3,7 @@ nest_asyncio.apply()
 from llama_parse import LlamaParse
 from app.splitter import text_splitter
 
-__api_key="llx-GnR2Ac9d0MsVMo5M8F4RVEQDDKAEaQVAvDc7DN15YjYMc7Sb"
+__api_key="" #TODO: CADA UNO DEBE CREARSE SU CUENTA EN LLAMACLOUD Y PONER SU PROPIA APIKEY PARA PROBAR
 
 __parser = LlamaParse(
     api_key=__api_key,  # can also be set in your env as LLAMA_CLOUD_API_KEY
