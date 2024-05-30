@@ -2,11 +2,10 @@ import nest_asyncio
 nest_asyncio.apply()
 from llama_parse import LlamaParse
 from app.splitter import text_splitter
-
-__api_key="" #TODO: CADA UNO DEBE CREARSE SU CUENTA EN LLAMACLOUD Y PONER SU PROPIA APIKEY PARA PROBAR
+from app.config import conf
 
 __parser = LlamaParse(
-    api_key=__api_key,  # can also be set in your env as LLAMA_CLOUD_API_KEY
+    api_key=conf.LLAMA_PARSE_API_KEY,  # can also be set in your env as LLAMA_CLOUD_API_KEY
     result_type="markdown",  # "markdown" and "text" are available
     num_workers=4,  # if multiple files passed, split in `num_workers` API calls
     verbose=True,
