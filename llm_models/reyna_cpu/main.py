@@ -41,7 +41,7 @@ Si el contexto no es relevante para contestar la pregunta, por favor no conteste
 def get_response(prompt, context):
     output = llm(
         prompt_template.format(context=context, prompt=prompt),
-        max_new_tokens=50,
+        max_new_tokens=3500,
         return_full_text=False,
         top_k=10,
     )

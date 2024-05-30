@@ -1,0 +1,527 @@
+## Algoritmos y Estructuras de Datos Planificación Ciclo lectivo 2024 – Ordenanza 1877
+
+Datos administrativos de la asignaturaDatos administrativos de la asignatura
+
+|Departamento:|Ingeniería en Sistemas de Información|Carrera:|Ingeniería en Sistemas de Información|
+|---|---|---|---|
+|Asignatura:|Algoritmos y Estructuras de Datos|Nivel de la carrera:|1er año|
+|Bloque curricular:|Desarrollo de software|Duración:|Anual|
+|Carga horaria presencial semanal:|4 horas reloj (5 horas cátedra)|Carga Horaria total:|120 horas reloj anuales (160 horas cátedra)||Carga horaria no presencial semanal (si correspondiese)|% horas no presenciales (si correspondiese)|
+|---|---|
+| | ||Profesor/es|Marcos Adolfo Santa Cruz|Dedicación:|3 DS Profesor Adjunto (Coordinador)|
+|---|---|---|---|
+| |María Gabriela Cerra| |2 DS Profesor Adjunto|
+|Auxiliar/es de 1º/JTP:|Cerveri Gustavo|Dedicación:|1 DS JTP|
+| |Amatriain Hernán| |1 DS JTP|
+| |Gómez Guillermo (con licencia por cargo mayor jerarquía)| |1 DS Ayudante Diplomado|
+| |Paternoster Félix| |1 DS Ayudante Diplomado|
+| |Marinier Sebastián| |1 DS Ayudante Diplomado|
+| |Paganini Lucas| |1 DS Ayudante Diplomado|Presentación. FundamentaciónEsta asignatura constituye una introducción al proceso de Diseño e Implementación de Software, particularmente a la disciplina programación, dado que se enfoca en la especificación y expresión de algoritmos, analizando su corrección y eficiencia. El paradigma de programación que se utiliza es el imperativo - procedural, con énfasis en la modularización y la programación estructurada. Este enfoque combina el tratamiento algorítmico con la elección de las estructuras de datos, contemplandoel imperativo - procedural, con énfasis en la modularización y la programación estructurada. Este enfoque combina el tratamiento algorítmico con la elección de las estructuras de datos, contemplando aspectos de documentación y reusabilidad. Incluye el uso de pseudocódigo para introducir a las y los estudiantes en el desarrollo de programas (en papel) y luego en el empleo del lenguaje de programación C, para la prueba y ejecución de dichos programas en máquina.---
+## La importancia de la asignatura está dada porque introduce las herramientas necesarias para la resolución de problemas simples de ingeniería, y el diseño y desarrollo de software, permitiendo profundizar dicha temática en las materias posteriores.● Relación de la asignatura con el perfil de egreso.La asignatura provee las herramientas básicas para que las y los estudiantes adquieran la capacidad de analizar y entender problemas sencillos y expresar la solución mediante una computadora. Introduce a las y los estudiantes al proceso de resolución de problemas mediados por tecnología, sentando las bases para el desarrollo de software. Promueve una formación analítica y establece los pilares iniciales de la resolución de problemas de ingeniería mediante el uso de tics.● Relación de la asignatura con los alcances del título.
+
+La asignatura brinda a las y los estudiantes una formación inicial para diseñar, desarrollar e implementar software. (AL4 Ord.1877/22)
+
+Relación de la asignatura con las competencias de egreso de la carrera|Competencias|Nivel de Aporte|Sub-Competencia (Capacidades asociadas a la competencia)|
+|---|---|---||---|---|---|
+|CE-1.3. Especificar, proyectar, y desarrollar software para la elaboración de soluciones informáticas con el propósito de resolver problemas estratégicos y operativos, así como de servicios y de negocios, en el marco de una actividad económica que sea social y ambientalmente sustentable.|2|- Ser capaz de relevar las necesidades del usuario y traducirlas mediante el diseño de una solución tecnológica.
+- Ser capaz de generar alternativas de solución.- Ser capaz de generar alternativas de solución.
+- Ser capaz de desarrollar criterios para la evaluación de las alternativas y seleccionar las más adecuadas en un contexto particular.
+- Ser capaz de seleccionar, especificar y usar las técnicas, herramientas y procesos de diseño adecuados a los requerimientos y restricciones del problema.
+- Ser capaz de expresar la solución diseñada utilizando un lenguaje de programación.- Ser capaz de expresar la solución diseñada utilizando un lenguaje de programación.
+- Ser capaz de controlar el proceso de ejecución de la solución tecnológica.
+- Ser capaz de documentar y comunicar de manera efectiva las soluciones seleccionadas.
+|
+|CG-1. Identificar, formular y resolver problemas de ingeniería.|1|- Ser capaz de identificar una situación presente o futura como problemática.
+- Ser capaz de identificar y organizar los datos pertinentes al problema.- Ser capaz de identificar y organizar los datos pertinentes al problema.
+- Ser capaz de evaluar el contexto particular del problema.
+|
+---
+problema e incluirlo en el análisis.Ser capaz de delimitar el problema y formularlo de manera clara y precisa.
+
+Ser capaz de generar diversas alternativas de solución a un problema ya formulado.
+
+Ser capaz de realizar el diseño de la solución tecnológica, incluyendo el modelado.
+
+Ser capaz de participar en clase e interactuar con sus compañeros, apreciando y respetando la diversidad de opiniones, de ideas y de puntos de vista.
+
+Ser capaz de respetar las normas de convivencia y el contrato pedagógico.Ser capaz de respetar las normas de convivencia y el contrato pedagógico.
+
+Ser capaz de expresarse de manera concisa, clara y precisa, tanto en forma oral como escrita.
+
+Ser capaz de utilizar técnicas y herramientas de comunicación apropiadas, para transmitir eficientemente la información necesaria.
+
+Ser capaz de utilizar y articular de manera eficaz distintos lenguajes: formal, gráfico y natural.Ser capaz de utilizar y articular de manera eficaz distintos lenguajes: formal, gráfico y natural.
+
+Ser capaz de evaluar sus propias estrategias de construcción de conocimiento, para desarrollar un aprendizaje autónomo y autorregulado, aplicando acciones de planificación, organización y anticipación de sus tiempos, de sus recursos, de su aprendizaje y de su trabajo.
+
+Ser capaz de evaluar el propio aprendizaje y encontrar los recursos necesarios para mejorarlo.Ser capaz de evaluar el propio aprendizaje y encontrar los recursos necesarios para mejorarlo.
+
+Ser capaz de hacer una búsqueda bibliográfica por medios diversos (bibliotecas, librerías, Internet, centros de documentación, etc.), de seleccionar el material relevante (que sea a la vez válido y actualizado) y de hacer una lectura comprensiva y crítica del mismo.Propósito Brindar a las y los estudiantes las herramientas de programación básicas para que sean capaces de: - desarrollar un pensamiento lógico que logre la abstracción, pasando de un lenguaje coloquial a un lenguaje lógico, aplicando soluciones algorítmicas. - analizar problemas de baja a mediana complejidad, resolubles en una computadora, poniendo énfasis en la modelización, abstracción de funciones y en la modularización de los procesos. - seleccionar de forma adecuada las estructuras decomplejidad, resolubles en una computadora, poniendo énfasis en la modelización, abstracción de funciones y en la modularización de los procesos. - seleccionar de forma adecuada las estructuras de datos y de control para representar la solución de forma algorítmica---
+## Objetivos establecidos en el DC- Identificar problemas algorítmicos.
+- Comprender el proceso de desarrollo de software.
+- Resolver problemas aplicando soluciones algorítmicas y estructuras de datos.
+
+## Resultados de aprendizaje|RA01|Analiza problemas de baja a mediana complejidad, resolubles con computadora, para construir el algoritmo necesario que respete la especificación formal utilizando la modelización, abstracción de funciones y la modularización del algoritmo.|
+|---|---|
+|RA02|Selecciona las estructuras de datos apropiadas para el almacenamiento y manipulación de datos haciendo un uso eficiente de los recursos de tiempo y espacio.||---|---|
+|RA02|Selecciona las estructuras de datos apropiadas para el almacenamiento y manipulación de datos haciendo un uso eficiente de los recursos de tiempo y espacio.|
+|RA03|Distingue las principales estructuras de control y sus condiciones de aplicación, para expresar las instrucciones de un algoritmo, respetando el orden lógico y secuencial en que las mismas deben ser llevadas a cabo.||RA04|Identifica los datos del problema para modelarlos mediante tipos abstractos de datos, distinguiendo entre atributos y funcionalidad.|
+|RA05|Interpreta la sintaxis y semántica de un lenguaje de programación, para codificar los algoritmos desarrollados y ejecutarlos en máquina, comprobando se cumplan los requerimientos del usuario.||RA05|Interpreta la sintaxis y semántica de un lenguaje de programación, para codificar los algoritmos desarrollados y ejecutarlos en máquina, comprobando se cumplan los requerimientos del usuario.|
+|RA06|Actúa con respeto hacia sus pares y docentes, para poder interactuar, dialogar, escuchar, comunicar sus ideas y participar en clase, generando un ambiente de empatía y solidaridad.||RA06|Actúa con respeto hacia sus pares y docentes, para poder interactuar, dialogar, escuchar, comunicar sus ideas y participar en clase, generando un ambiente de empatía y solidaridad.|
+|RA07|Utiliza su comunicación oral y escrita, para transferir conocimiento y expresarse de forma clara, segura y convincente, participando en puestas en común y desarrollando sus algoritmos.|## Asignaturas correlativas previas
+
+- Por ser materia de 1er nivel no tiene correlativas previas
+
+## Asignaturas correlativas posteriores
+
+- Sintaxis y Semántica de los Lenguajes
+- Paradigmas de Programación
+- Análisis de Sistemas de Información
+---
+## Programa analítico. Unidades temáticas
+
+### CONTENIDOS MÍNIMOS### CONTENIDOS MÍNIMOS
+
+Programación Imperativa y Concepto de algoritmo.
+Concepto de Dato.
+Tipos de Datos Simples.
+Tipo Abstracto de datos.
+Estructuras de Control Básicas.
+Estrategias de Resolución de problemas.
+Estructuras de Datos.
+Abstracciones con procedimientos y funciones.
+Estructuras de Datos lineales y no lineales.
+Algoritmos de Búsqueda, Recorrido y Ordenamiento.
+Archivos de Acceso Secuencial y Aleatorio.
+Recursividad.
+
+### CONTENIDOS ANALÍTICOS### CONTENIDOS ANALÍTICOS
+
+#### UNIDAD Nº 1: Programación Imperativa. Conceptos básicos: Algoritmos y Datos1.1. Conceptos Introductorios: Problema, Dato, Acción, Informática, Computadora, Programa. Paradigma de Programación. Comprensión de problemas. Etapas del proceso de resolución de problemas. Estrategias de resolución de problemas.1.2. Estrategias de resolución de problemas. Introducción a las principales técnicas de diseño: divide y vencerás, partición en bloques, refinamientos sucesivos, algoritmos ávidos (método voraz), programación dinámica (recursión), vuelta atrás (backtracking). Comparación de técnicas.1.3. Concepto de Datos. Estructuras de datos simples: variable, constantes, declaración y operaciones de manipulación. Tipos de datos simples: numéricos, lógicos y caracteres. Operaciones y expresiones. Entrada y salida estándar. Formateo.
+1.3. Concepto de acción y condición. Estructuras de Control: Secuencia, Selección (simple y múltiple) e Iteraciones. Composición de estructuras. Estructura de programas.
+1.4. Algoritmos: Documentación, Depuración de errores, Ejecución y Mantenimiento.Total horas cátedra: 25h (19h reloj)
+
+#### UNIDAD Nº 2: Abstracción procedural: procedimientos y funciones.2.1. Aplicación de la técnica de diseño Descendente. Principios de la Programación Modular. Concepto de subprograma. Descomposición y modularización. Pasaje de parámetros. Procedimientos y Funciones. Utilización práctica de la técnica Divide y Vencerás.
+2.2. Tiempo de vida y Alcance de datos. Variables locales y globales. Reglas de alcance.2.2. Tiempo de vida y Alcance de datos. Variables locales y globales. Reglas de alcance.
+2.3. Introducción a la técnica de diseño Recursiva: concepto de Recursión. Aplicación y verificación. Método de las cajas. Procedimientos y funciones recursivas.
+2.4 Análisis de los algoritmos recursivos: comparación de la eficiencia con algoritmos iterativos.Total horas cátedra: 30h (22h reloj)
+
+#### UNIDAD Nº3: Estructuras de datos compuestas estáticas y dinámicas.
+
+##### Tema 1: Estructuras de datos estáticas3.1. Tipos de datos definidos por el usuario. Constructores. Conceptos básicos de estructuras de datos compuestas. Clasificaciones. Noción de tipo abstracto de datos.
+3.2. Arreglos: Datos compuestos indexados. Arreglos unidimensionales, bidimensionales y multidimensionales. Operaciones básicas de carga, consulta, recorridos. Arreglos como parámetros.
+---
+### 3.3. Tratamientos básicos de arreglos unidimensionales: algoritmos clásicos de búsqueda, ordenamiento, mezcla.### 3.4. Registros: Accesos a campos. Anidamiento de registros. Operaciones sobre registros. Arreglos de registros.
+
+## Tema 2: Estructuras de datos dinámicas lineales
+
+### 3.5. Concepto de puntero. Datos compuestos enlazados por punteros. Definiciones de datos recursivas.
+
+### 3.6. Listas lineales enlazadas simples: Declaraciones y operaciones básicas.
+
+### 3.7. Aplicación de listas en pilas y colas. Operaciones básicas.### 3.6. Listas lineales enlazadas simples: Declaraciones y operaciones básicas.
+
+### 3.7. Aplicación de listas en pilas y colas. Operaciones básicas.
+
+### 3.8. Archivos: Conceptos generales. Archivos de acceso secuencial y Aleatorio: Organizaciones y accesos.
+
+## Tema 3: Estructuras dinámicas no lineales
+
+### 3.9. Concepto de árbol. Clasificación. Operaciones básicas.
+
+### 3.10. Concepto de grafo. Clasificación. Operaciones básicas.
+
+Total horas cátedra:
+55h (41h reloj)### 3.9. Concepto de árbol. Clasificación. Operaciones básicas.
+
+### 3.10. Concepto de grafo. Clasificación. Operaciones básicas.
+
+Total horas cátedra:
+55h (41h reloj)
+
+## UNIDAD N° 4: Tipos abstractos de Datos
+
+### 4.1 Definición de abstracción de datos.
+
+### 4.2 Tipos de Datos abstractos simples. Uso y diseño.
+
+### 4.3 Ventajas del uso del TADs
+
+Total de horas cátedra:
+10h (8h reloj)
+
+## UNIDAD Nº5:Lenguajes de programación### 4.2 Tipos de Datos abstractos simples. Uso y diseño.
+
+### 4.3 Ventajas del uso del TADs
+
+Total de horas cátedra:
+10h (8h reloj)
+
+## UNIDAD Nº5:Lenguajes de programación
+
+### 5.1. Empleo de un lenguaje imperativo estructurado: C. Introducción: características, entorno, compilación y ejecución, errores. Formato de programas en C.
+
+### 5.2. Estructuras de control en C.
+
+### 5.3. Subprogramas y unidades de programación en C.### 5.2. Estructuras de control en C.
+
+### 5.3. Subprogramas y unidades de programación en C.
+
+### 5.4. Resolución de problemas básicos (sumas y conteos, máximos y mínimos, manejos de caracteres, etc.) con aplicación adecuada de las estructuras de control y de datos.
+
+Total horas cátedra:
+20h (15h reloj)
+
+Total horas cátedra destinadas a evaluación:
+20h (15h reloj)
+
+Total horas de la asignatura:
+160 horas cátedra (120 horas reloj)Total horas cátedra:
+20h (15h reloj)
+
+Total horas cátedra destinadas a evaluación:
+20h (15h reloj)
+
+Total horas de la asignatura:
+160 horas cátedra (120 horas reloj)
+
+Total horas cátedra destinadas al análisis y resolución de problemas de ingeniería y estudio de casos:
+40 horas cátedra (30 horas reloj)
+
+## Metodología de enseñanza
+
+Las estrategias metodológicas se basan en:Las estrategias metodológicas se basan en:
+
+- Clases presenciales, expositivas, dialogadas con preguntas alternadas, para propiciar la participación reflexiva de las y los estudiantes.
+- Análisis y desarrollo de casos de estudio para promover el intercambio de ideas y la construcción colectiva de conocimiento.
+---
+## Propuesta de trabajos ABP (Aprendizaje basado en problemas) para favorecer el desarrollo del pensamiento crítico, la comunicación, la colaboración y la resolución de problemas.- Uso del campus CVG para consulta del material y la realización de cuestionarios.
+- Uso de guías de estudio con problemas- modelo resueltos y una lista de problemas propuestos para resolver. Cada una de las guías se formula con problemas de complejidad incremental, donde se refuerzan los conocimientos por aplicación de la noción de repaso permanente de los conceptos adquiridos.
+- Uso de laboratorio de programación: Para la prueba en máquina de los programas codificados en lenguaje C.## Recomendaciones para el estudioSe recomendará a las y los estudiantes la lectura previa del material de clase. Debido a la gran cantidad de contenidos de la materia y a la correlación entre los mismos, es recomendable que las y los estudiantes desarrollen la autogestión de sus aprendizajes a través de las guías de estudio propuestas por la cátedra. Del mismo modo, es de fundamental importancia la participación en clase, la realización de consultas, ya sean presenciales o virtuales (sincrónicas o asincrónicas), evitando depor la cátedra. Del mismo modo, es de fundamental importancia la participación en clase, la realización de consultas, ya sean presenciales o virtuales (sincrónicas o asincrónicas), evitando de esta forma acumular dudas que puedan interferir en el adecuado entendimiento del tema siguiente y su posterior aplicación en la resolución de problemas. Es de destacar que los contenidos de la materia son acumulativos, es decir, que se van encadenando los temas nuevos con los previos, siendo indispensableaplicación en la resolución de problemas. Es de destacar que los contenidos de la materia son acumulativos, es decir, que se van encadenando los temas nuevos con los previos, siendo indispensable aplicarlos en forma incremental en la resolución de los problemas propuestos.## Metodología de evaluación
+
+Se propone realizar dos tipos de evaluaciones:- Formativa o de proceso, a aplicar a lo largo de la cursada de la materia, que permita observar y analizar los procesos educativos de las y los estudiantes, para identificar las fortalezas y dificultades, y en función de ello, definir qué acciones tomar como docente. Esta modalidad se llevará a cabo a través de diferentes instrumentos: preguntas disparadoras o dialogadas; análisis y desarrollo de casos de estudio, (en ambos casos para fomentar la participación en clase del estudiante);a cabo a través de diferentes instrumentos: preguntas disparadoras o dialogadas; análisis y desarrollo de casos de estudio, (en ambos casos para fomentar la participación en clase del estudiante); cuestionarios con retroalimentación en el campus y guías de resolución de problemas y mediante el desarrollo e implementación de un trabajo práctico grupal en máquina con coloquio.- Sumativa, a través de exámenes parciales integradores, o bien de examen final (en caso que la o el estudiante no haya aprobado la materia por promoción), que permitan determinar el grado de apropiación de los saberes (saber saber, ser y hacer). En ambos casos el examen se evalúa en forma escrita, oral o mixta, mediante preguntas de respuesta extendida y resolución de problemas.Evaluación de los RA:
+---
+## Resultados de Aprendizaje|Unidades Temáticas|Evaluación|
+|---|---|
+|RA 01: Analiza problemas de baja a mediana complejidad, resolubles con computadora, para construir el algoritmo necesario que respete la especificación formal, utilizando la modelización, abstracción de funciones y la modularización del algoritmo.|Formativa mediante heteroevaluación - Define correctamente los datos del problema.
+- Especifica de forma pertinente las acciones a llevar a cabo para resolver el problema.- Especifica de forma pertinente las acciones a llevar a cabo para resolver el problema.
+- Divide el problema original en subtareas o módulos.
+Sumativa por medio de la heteroevaluación: Parcial escrito, oral o mixto, con preguntas de desarrollo extendido o multiplechoice, y resolución algorítmica de un problema de baja a media complejidad. Retroalimentación mediante explicación general de la resolución correcta del mismo.||RA 02: Selecciona las estructuras de datos apropiadas para el almacenamiento y manipulación de datos haciendo un uso eficiente de los recursos de tiempo y espacio.|Formativa por medio de autoevaluación - Identifica las diferencias entre las estructuras de datos, su utilidad y funcionalidad.
+- Define correctamente todos los tipos de datos necesarios para el proceso de datos.- Define correctamente todos los tipos de datos necesarios para el proceso de datos.
+Sumativa por medio de la heteroevaluación: - Declara todas las variables en el lugar esperado, con el tipo de dato correcto y con identificadores amigables.
+- Utiliza de manera correcta las estructuras de datos definidas en el algoritmo.- Utiliza de manera correcta las estructuras de datos definidas en el algoritmo.
+Parcial escrito, oral o mixto, con preguntas de desarrollo extendido o multiplechoice, y resolución algorítmica de un problema de baja a media complejidad. Retroalimentación mediante explicación general de la resolución correcta del mismo.||RA 03: Distingue las principales estructuras de control y sus condiciones de aplicación, para expresar las instrucciones de un algoritmo, respetando el orden lógico y secuencial en que las mismas deben ser llevadas a cabo.|Formativa por medio de autoevaluación - Identifica las diferencias entre las estructuras de control, su utilidad y funcionalidad.Sumativa por medio de la heteroevaluación: - Selecciona y utiliza de forma correcta las estructuras de control en el desarrollo de soluciones algorítmicas.
+- Combina
+Parcial escrito, oral o mixto, con preguntas de desarrollo extendido o multiplechoice, y resolución algorítmica de un problema de baja a media complejidad. Retroalimentación mediante explicación general de la resolución correcta del mismo.|
+------
+## RA 04: Identifica los datos del problema, sus atributos y funcionalidad asociada, para modelarlos mediante tipos abstractos de datos, aplicando los conceptos de ocultamiento y encapsulamiento.| |4|Sumativa por medio de heteroevaluación.|
+|---|---|---|
+|Es capaz de diseñar, implementar y aplicar tipos abstractos de datos.| | |
+|Retroalimentación mediante explicación general de la resolución correcta del mismo.| | |
+
+## RA 05: Interpreta la sintaxis y semántica de un lenguaje de programación, para codificar los algoritmos desarrollados y ejecutarlos en máquina, comprobando se cumplan los requerimientos del usuario.| |5|Formativa mediante autoevaluación.|
+|---|---|---|
+|Codifica correctamente en lenguaje C las soluciones algorítmicas desarrolladas.| | |
+|Es capaz de controlar la ejecución en máquina de los programas desarrollados.| | |
+|Retroalimentación mediante explicación individual de los errores.| | |
+|Parcial escrito, oral o mixto, con preguntas de desarrollo extendido o multiplechoice, y resolución algorítmica de un problema de baja a media complejidad.| | ||Parcial escrito, oral o mixto, con preguntas de desarrollo extendido o multiplechoice, y resolución algorítmica de un problema de baja a media complejidad.| | |
+|Retroalimentación mediante explicación general de la resolución correcta del mismo.| | |## RA 06: Actúa con respeto hacia sus pares y docentes, para poder interactuar, dialogar, escuchar, comunicar sus ideas y participar en clase, generando un ambiente de empatía y solidaridad.|Todas|Formativa por medio de heteroevaluación|
+|---|---|
+|Es capaz de participar en clase e interactuar con sus compañeros, apreciando y respetando la diversidad de opiniones, de ideas y de puntos de vista.| |
+|Observación y valoración colectiva del desempeño y comportamiento en clase de las y los estudiantes.| |
+|Respeta las normas de convivencia y el contrato pedagógico.| |## RA 07: Utiliza su comunicación oral y escrita, para transferir conocimiento y expresarse de forma clara, segura y convincente, participando en puestas en común y documentando sus algoritmos.|Todas|Sumativa mediante heteroevaluación|
+|---|---|
+|Se expresa de manera pertinente en los exámenes escritos (en la redacción escrita de las respuestas extendidas).| |
+|Se expresa oralmente en forma correcta y clara.| |
+|Documenta de manera clara y precisa los algoritmos desarrollados.| |
+|Exposición oral (coloquio) sobre el desarrollo y ejecución en máquina de un trabajo grupal.| ||Documenta de manera clara y precisa los algoritmos desarrollados.| |
+|Exposición oral (coloquio) sobre el desarrollo y ejecución en máquina de un trabajo grupal.| |
+|Parcial escrito, oral o mixto, con preguntas de desarrollo extendido o multiple choice, y resolución algorítmica de un problema de baja a media complejidad.| |
+|Retroalimentación mediante explicación general de la resolución correcta del mismo.| |
+---
+## Condiciones de aprobación de la cursada y la materia:### Modalidad 1°- Aprobación no directa (común o sin Promoción)
+
+La cursada se regulariza mediante:
+
+- la entrega con coloquio y aprobación de un trabajo práctico grupal desarrollado y ejecutado en computadora.
+- la aprobación de 1 (un) parcial, escrito en papel, que tendrá dos fechas de recuperación y una fecha flotante. Nota de aprobación: 4 (cuatro)La materia se aprueba mediante un examen final escrito en papel, que incluye una parte de desarrollo conceptual y el diseño de un algoritmo. Este examen constituye una evaluación sumativa final. Nota de aprobación: 6 (seis)
+
+### Modalidad 2°- Aprobación directa (con Promoción)
+
+La materia se promociona mediante:La materia se promociona mediante:
+
+- Asistencia al 75% de las clases.
+- la entrega con coloquio y aprobación de un trabajo práctico grupal desarrollado y ejecutado en computadora.
+- la aprobación de 1 (un) parcial, escrito en papel, que tendrá dos fechas de recuperación y una fecha flotante. Nota de aprobación: 6 (seis)
+- la entrega y aprobación del Análisis de un Caso de Estudio. Esta evaluación tendrá dos fechas de recuperación y una fecha flotante. Nota de aprobación: 6 (seis)La fecha flotante es para rendir el parcial y/o el caso de estudio.
+
+La calificación final será obtenida como promedio de las notas de todas las evaluaciones (expresada como valor numérico entero). Dicho promedio final debe ser con nota 6 (seis) o superior.
+
+Aclaración: Si el o la estudiante aprueba el parcial en la primer fecha pero desea mejorar su nota puede volver a rendir en otra fecha para entrar a la promoción. Se tomará la nota más alta obtenida.Observación: Análisis del Caso de estudio: modelización de la solución del problema a nivel modular. El trabajo debe ser entregado completo como condición necesaria para obtener la promoción, es decir, incluyendo la justificación de las estructuras de datos compuestas seleccionadas como también explicitando de manera clara y completa el objetivo de cada módulo o subprograma definido. Si la construcción del diseño es considerada suficiente para su aprobación el alumno/alumna recibirá el méritode manera clara y completa el objetivo de cada módulo o subprograma definido. Si la construcción del diseño es considerada suficiente para su aprobación el alumno/alumna recibirá el mérito por esta tarea para poder obtener la promoción directa, de alcanzar el rendimiento exigido en los parciales.---
+## Modalidad 3°- Recursar la materia con cursada aprobadaDe acuerdo a la Resolución 1648 se aceptará que un/a estudiante solicite ser admitido a recursar la materia, sin exigirle el 75% de asistencia a clases. Debiendo cumplir con los requisitos para alcanzar la aprobación directa de la materia en lo que respecta a la aprobación de los parciales con nota mínima 6 en cada uno. De no alcanzar la cursada regular se le respetará la cursada obtenida anteriormente.
+
+## Cronograma de clases/trabajos prácticos/exámenes (tentativo)|Nro de Semana|Clase 1|Tiempo asignado|Clase 2|Tiempo asignado|
+|---|---|---|---|---|
+|1|UT1|2h|UT1|3h|
+|(3-5/4)|PROBLEMAS. PARADIGMAS. ALGORITMOS. PROGRAMAS: etapas de desarrollo, representación, pseudocódigo.|(1h 30’ reloj)|Presentación Práctica. Detalles sobre evaluaciones y aprobación de Cursada.|(2h 15’ reloj)|
+|2|UT1|2h|UT1|3h||2|UT1|2h|UT1|3h|
+|(8-12/4)|CONCEPTO DE DATOS: variables, valores y operaciones.|(1h 30’ reloj)|Resolución de problemas. Definición de Entorno, Variables, Constantes y Operaciones.|(2h 15’ reloj)|
+|3|UT1|2h|UT1|3h|
+|(15-19/4)|ESTRUCTURAS DE CONTROL: secuencia, y decisión simple, decisión compuesta y múltiple.|(1h 30’ reloj)|Estructura de Decisión UT5: Inicio del laboratorio de C.|(2h 15’ reloj)|
+|4|UT1|2h|UT1|3h||4|UT1|2h|UT1|3h|
+|(22-26/4)|ESTRUCTURAS DE CONTROL: repetición. Acumulador, contador, promedios.|(1h 30’ reloj)|Estructura de Iteración UT5: Uso del laboratorio de C.|(2h 15’ reloj)|
+---
+## porcentajes, máximos y mínimos.| |UT2| |2h|UT1| | |3h|
+|---|---|---|---|---|---|---|---|
+|(29/4 – 3/5)|SUBPROGRAMAS: Concepto de subprograma. Clasificación: procedimientos y funciones. Concepto de parámetro. Clasificación según su uso. Pasaje de parámetros. ALCANCE Y TIEMPO DE VIDA: variables locales y globales|(1h 30’ reloj)|UT5: Uso del laboratorio de C.| | |(2h 15’ reloj)| || |UT2| |2h|UT2| | |3h|
+|---|---|---|---|---|---|---|---|
+|(6-10/5)|SUBPROGRAMAS: Problema globalizador con procedimientos y funciones|(1h 30’ reloj)|UT5: Codificación y ejecución de programas en laboratorio de C.| | |(2h 15’ reloj)| || |UT3| |2h|UT2| | |3h|
+|---|---|---|---|---|---|---|---|
+|(13-17/5)|ESTRUCTURAS DE DATOS COMPUESTAS ESTÁTICAS: tipos definidos por el usuario. Arreglos unidimensionales. Operaciones básicas.|(1h 30’ reloj)|UT5: Codificación y ejecución de programas en laboratorio de C.| | |(2h 15’ reloj)| || |UT3| |2h|UT3| | |3h|
+|---|---|---|---|---|---|---|---|
+|(20-24/5)|ESTRUCTURAS DE DATOS COMPUESTAS ESTÁTICAS: Arreglos bidimensionales. Operaciones básicas.|(1h 30’ reloj)|UT5: Codificación y ejecución de programas en laboratorio de C.| | |(2h 15’ reloj)| || |UT3| |2h|UT3| | |3h|
+|---|---|---|---|---|---|---|---|
+|(27-31/5)|ESTRUCTURAS DE DATOS COMPUESTAS ESTÁTICAS: Registros: acceso por campos. Operaciones básicas. Arreglo de registros. Problema de aplicación|(1h 30’ reloj)|UT5: Codificación y ejecución de programas en laboratorio de C.| | |(2h 15’ reloj)| |
+---
+## UT3
+
+|10|2h|1RA INSTANCIA DE EVALUACIÓN|3h (2h 15')|
+|---|---|---|---|
+|(3-7/6)|ORDENAMIENTO Y BÚSQUEDA:|(1h 30' reloj)| |
+|Métodos de ordenamiento sobre arreglos| | | |
+
+## UT3|10|2h|1RA INSTANCIA DE EVALUACIÓN|3h (2h 15')|
+|---|---|---|---|
+|(3-7/6)|ORDENAMIENTO Y BÚSQUEDA:|(1h 30' reloj)| |
+|Métodos de ordenamiento sobre arreglos| | | |
+
+## UT3
+
+|11|2h|1RA INSTANCIA DE EVALUACIÓN|3h (2h 15')|
+|---|---|---|---|
+|(10-14/6)|ORDENAMIENTO Y BÚSQUEDA:|(1h 30' reloj)| |
+|Búsqueda de datos sobre arreglos| | | |
+
+## UT4
+
+|12|2h|1RA INSTANCIA DE EVALUACIÓN|3h (2h 15')|
+|---|---|---|---|
+|(17-21/6)|TIPOS ABSTRACTOS DE DATOS: Concepto. Uso y diseño de TADs|(1h 30' reloj)| |## UT4
+
+|12|2h|1RA INSTANCIA DE EVALUACIÓN|3h (2h 15')|
+|---|---|---|---|
+|(17-21/6)|TIPOS ABSTRACTOS DE DATOS: Concepto. Uso y diseño de TADs|(1h 30' reloj)| |
+
+## UT4
+
+|13|2h|1RA INSTANCIA DE EVALUACIÓN|3h (2h 15')|
+|---|---|---|---|
+|(24-28/6)|TIPOS ABSTRACTOS DE DATOS: Aplicaciones utilizando TAD|(1h 30' reloj)| |
+
+## UT3## UT4
+
+|13|2h|1RA INSTANCIA DE EVALUACIÓN|3h (2h 15')|
+|---|---|---|---|
+|(24-28/6)|TIPOS ABSTRACTOS DE DATOS: Aplicaciones utilizando TAD|(1h 30' reloj)| |
+
+## UT3
+
+|14|2h|1RA INSTANCIA DE EVALUACIÓN|3h (2h 15')|
+|---|---|---|---|
+|(1-5/7)|ESTRUCTURAS DINÁMICAS: Tipo de dato puntero. Listas lineales simples. Operaciones básicas: creación y recorrido.|(1h 30' reloj)| |
+|Operaciones básicas: inserción y eliminación..| | | |
+
+## UT3## UT3
+
+|15|2h|1RA INSTANCIA DE EVALUACIÓN|3h (2h 15')|
+|---|---|---|---|
+|(8-12/7)|ESTRUCTURAS DINÁMICAS: Operaciones básicas: inserción y eliminación..|(1h 30' reloj)| |
+
+## Receso invernal
+
+Sin actividad
+
+## UT2
+
+|18|2h|INSTANCIA DE RECUPERACION|3h (2h 15')|
+|---|---|---|---|
+|(29/7-2/8)|RECURSIÓN: diseño e implementación de procedimientos y funciones recursivas en estructuras de datos estáticas|(1h 30' reloj)| |
+
+## UT2## UT2
+
+|19|2h|INSTANCIA DE RECUPERACION|3h (2h 15')|
+|---|---|---|---|
+|(5-9/8)|RECURSIÓN: aplicación de recursión en estructuras de datos dinámicas.|(1h 30' reloj)| |
+
+## UT3|20|2h|INSTANCIA DE RECUPERACION|3h (2h 15')|
+|---|---|---|---|
+|(12-16/8)|ESTRUCTURAS DINÁMICAS: Pilas Operaciones básicas.|(1h 30' reloj)| |
+---
+|UT|Horas|Contenido|Duración|Horas Reloj|
+|---|---|---|---|---|
+|3|2h|INSTANCIA DE RECUPERACION ESTRUCTURAS DINÁMICAS: Colas. Operaciones básicas.|3h|(2h 15’ reloj)|
+|3|2h|TAD ESTRUCTURAS DINÁMICAS: Listas lineales simples, pilas y colas: Ejercicio integrador.|3h|(2h 15’ reloj)||3|2h|TAD ESTRUCTURAS DINÁMICAS: Listas lineales simples, pilas y colas: Ejercicio integrador.|3h|(2h 15’ reloj)|
+|4|2h|Recursividad TIPOS ABSTRACTOS DE DATOS: Aplicaciones utilizando TAD en estructuras de datos dinámicas|3h|(2h 15’ reloj)|
+|3|2h|Listas ESTRUCTURAS DINÁMICAS: Listas no lineales. Concepto. Clasificación. Definición de árbol. Operaciones básicas|3h|(2h 15’ reloj)|
+|3|2h|Listas ESTRUCTURAS DINÁMICAS: Listas no lineales. Definición de grafo. Operaciones básicas|3h|(2h 15’ reloj)||3|2h|Listas ESTRUCTURAS DINÁMICAS: Listas no lineales. Definición de grafo. Operaciones básicas|3h|(2h 15’ reloj)|
+| | |Semana del estudiante Sin actividad| | |
+|3|2h|Pilas - Colas ESTRUCTURAS DINÁMICAS: Archivos de registros de organización secuencial y directa. Operaciones básicas|3h|(2h 15’ reloj)|
+| |2h|Modelo de Caso de Estudio. Ejercitación|3h|(2h 15’ reloj)|
+| |2h|Aplicaciones utilizando archivos|3h|(2h 15’ reloj)|
+| |2h|Práctica general de Caso de Estudio|3h|(2h 15’ reloj)|
+---| |2h|Modelo de Caso de Estudio. Ejercitación|3h|(2h 15’ reloj)|
+| |2h|Aplicaciones utilizando archivos|3h|(2h 15’ reloj)|
+| |2h|Práctica general de Caso de Estudio|3h|(2h 15’ reloj)|
+---
+## CRONOGRAMA TENTATIVO DE EVALUACIONES|Entrega del Caso de Estudio:|Primera oportunidad: desdoblada la lista de postulantes en dos grupos en las semanas del 28/10/24 al 01/11/24 y 04/11/24 al 08/11/24|
+|---|---|
+| |Segunda oportunidad: Semanas del 25/11/24 al 29/11/24 y 02/12/24 al 06/12/24|
+| |Tercera oportunidad: Semana del 10/02/25 al 14/02/25|
+|Entrega y coloquio del trabajo grupal :|1er fecha: Semana del 05/08/24 al 09/08/24|
+
+##|25/10|Clase de entrega del Caso de Estudio (1° entrega Grupo 1)|2h|Practica general|3h (2h 15’ reloj)|
+|---|---|---|---|---|
+|31/10-1/11| |1h 30’| | |
+|32|Clase de entrega del Caso de Estudio (1° entrega Grupo 2)|2h|Primera fecha de parcial|3h (2h 15’ reloj)|
+|4-8/11| |1h 30’| | |
+|33|Muestra de corrección y clase de consulta.|2h|Consulta general|3h (2h 15’ reloj)|
+|11-15/11| |1h 30’| | |
+|34|Clase de repaso y consulta.|2h|Segunda fecha de parcial|3h (2h 15’ reloj)|
+|18-22/11| |1h 30’| | ||11-15/11| |1h 30’| | |
+|34|Clase de repaso y consulta.|2h|Segunda fecha de parcial|3h (2h 15’ reloj)|
+|18-22/11| |1h 30’| | |
+|35|Clase de entrega del Caso de Estudio (2° entrega Grupo 1)|2h|Consulta general|3h (2h 15’ reloj)|
+|25-29/11| |1h 30’| | |
+|36|Clase de entrega del Caso de Estudio (2° entrega Grupo 2)|2h|Tercera fecha de parcial|3h (2h 15’ reloj)|
+|2-6/12| |1h 30’| | |
+|37|Consulta sobre Caso de estudio|2h|Consulta general|3h (2h 15’ reloj)|
+|9-13/12| |1h 30’| | ||2-6/12| |1h 30’| | |
+|37|Consulta sobre Caso de estudio|2h|Consulta general|3h (2h 15’ reloj)|
+|9-13/12| |1h 30’| | |
+|En Febrero 2025|Clase de consulta previa a la 3er fecha del Caso de estudio, entrega y fecha flotante|2h|3er fecha de parcial y fecha flotante (se evalúan en semanas diferentes)|3h (2h 15’ reloj) c/u en días diferentes|
+---
+## 2da fecha: Semana del 26/08/24 al 30/08/24## 3er fecha: Semana del 09/09/24 al 13/09/24
+
+## Parcial:
+
+## 1er fecha: Semana del 11/11/24 al 15/11/24
+
+## 2da fecha: Semana del 02/12/24 al 06/12/24
+
+## 3er fecha: Semana del 03/02/25 al 07/02/25
+
+## Fecha Flotante: 24/02/25 y 26/02/25
+
+## Recursos necesarios
+
+Materiales curriculares (recursos):## 3er fecha: Semana del 03/02/25 al 07/02/25
+
+## Fecha Flotante: 24/02/25 y 26/02/25
+
+## Recursos necesarios
+
+Materiales curriculares (recursos):
+
+- Proyector y notebook.
+- Uso de los recursos que el campus de la UTN ofrezca.
+- Recursos multimedia diversos para desarrollo de las clases.
+- Uso de repositorios como Google Drive, GitHub.
+- Lenguaje de programación: C
+- Uso de laboratorios de informática.
+- Uso de notebooks, netbooks y tablets personales de las y los estudiantes, opcionalmente.Bibliografía de referencia:
+
+Se indica a las y los estudiantes un conjunto de textos agrupados en:
+
+Textos Básicos (de conocimiento obligatorio),
+
+Textos Complementarios (lecturas de apoyo a la comprensión e información)
+
+Material de apoyo y estudio:- Cronograma de Planificación de cátedra
+- Apuntes de introducción y desarrollo correspondiente a los temas de cada unidad temática
+- Power point con el contenido abordado en las clases.
+- Guías de estudio y resolución de problemas
+- Software gratuito mediante link en la página de la materia o url de donde bajarlo
+- Apuntes y tutoriales de lenguaje de programación C
+- Referencias a sitios de interés para el apoyo en determinados temas- Apuntes y tutoriales de lenguaje de programación C
+- Referencias a sitios de interés para el apoyo en determinados temas
+- Software desarrollado por la cátedra durante ciclos previos, disponible en Internet.Campus Virtual CVG de la FRLP
+
+La cátedra ha desarrollado sobre la nueva plataforma CVG todo el apoyo como Complemento de Comunicación en el proceso educativo haciendo uso de la funcionalidad y dinámica que la misma propone.El objetivo de ésta es que las y los estudiantes puedan acceder en forma rápida y permanente a los enunciados de las guías de estudio, apuntes de cátedra, ver cambios en el cronograma de dictado de la materia, conocer las notas obtenidas en los parciales, consultar las fechas de parciales y de las clases de consulta, y mantener una comunicación por medio de los foros de comunicación brindados por la plataforma.
+
+El uso del sitio permite:El uso del sitio permite:
+
+- Comunicación de información y novedades, apoyado por calendario y avisos
+- Sitio de consultas para las y los estudiantes.
+- Administración del repositorio de materiales de la cátedra
+- Publicación de los recursos para las y los estudiantes (archivos, páginas, cuestionarios, encuestas, tareas, talleres)
+---
+## Administración de evaluacionesLos resultados de todas las instancias de evaluación son comunicados a través del sitio, sean autoevaluaciones o resultados de correcciones por parte de las y los docentes (en estos casos además de la calificación se consignan observaciones). Esto complementa la comunicación personal y presencial.
+
+El acceso a la plataforma CVG es a través del siguiente link: https://frlp.cvg.utn.edu.ar/
+
+## Referencias bibliográficas (citadas según Normas APA)
+
+### Bibliografía obligatoria:Joyanes Aguilar, L (2008). Fundamentos de Programación. Algoritmos, estructura de datos y objetos.(4ta Edición). España: Mc Graw – Hill.
+De Giusti, A. (2001). Algoritmos, datos y Programas. Conceptos básicos. Buenos Aires: Pearson Education.
+De Lage F., Cataldi Z. y Salgueiro F. (2008) Fundamentos de algoritmos y programación. Buenos Aires: Nueva Librería.
+Joyanes Aguilar, L (2004). Fundamentos de Programación. Algoritmos y estructuras de datos. España: Mc Graw – Hill.Joyanes Aguilar, L (2004). Fundamentos de Programación. Algoritmos y estructuras de datos. España: Mc Graw – Hill.
+Joyanes Aguilar, L – Zahonero Martinez, I.(2001). Programación en C. Madrid: Mc Graw – Hill.
+Valenzuela Ruz, V. (2003). Manual de Análisis y Diseño de Algoritmos. Copiapó-Chile: Instituto Nacional de Capacitación. Dirección Nacional de Informática. Disponible en: (Dic 2022)
+Sebesta, R. (2015). Concepts of Programming Languages. (11° Edición). New York, USA: Pearson Education.Sebesta, R. (2015). Concepts of Programming Languages. (11° Edición). New York, USA: Pearson Education.
+Louden Kennep. (2008) Lenguajes de Programación. Principios y práctica. (2da Edición). México: Ed. Cengage Learning Latin American.### Bibliografía complementaria:
+
+Galve F. (1993). Algorítmica. Diseño y Análisis de algoritmos funcionales e imperativos. España: RA-MA.
+Joyanes Aguilar, L. (2006). Programación en C++. Algoritmos, estructuras de datos y objetos. Madrid: Mc Graw- Hill.
+
+## Función Docencia
+
+Profesor Coordinador## Función Docencia
+
+Profesor Coordinador
+
+Considerando el actual equipo docente, no existe un Profesor Titular, sino un Profesor Adjunto con la tarea adicional de coordinar la materia y supervisar el desarrollo de la cursada. El mismo se encuentra en constante comunicación con el plantel docente, sin dejar de cumplir con la atención de las comisiones asignadas a su cargo.
+---
+## En particular:Coordina tareas de la cátedra tales como readecuaciones permanentes a la planificación; organización de comisiones, horarios, consultas, actualización de bibliográfica; guías de estudio y de resolución de problemas; organización global de los procesos de enseñanza y aprendizaje. Participa en reuniones del Departamento, del área y de la cátedra (entre pares) a los efectos de coordinar contenidos, actividades, metodologías o criterios de evaluación. Diagrama y distribuye tareas al equipo docente.del Departamento, del área y de la cátedra (entre pares) a los efectos de coordinar contenidos, actividades, metodologías o criterios de evaluación. Diagrama y distribuye tareas al equipo docente. Supervisa las actividades asignadas a las y los docentes de la asignatura. Organiza, conduce y participa en las actividades internas de cátedra para favorecer la formación y actualización en contenidos disciplinares del personal de la cátedra. Desarrolla clases y atiende consultas académicas. Prepara,en las actividades internas de cátedra para favorecer la formación y actualización en contenidos disciplinares del personal de la cátedra. Desarrolla clases y atiende consultas académicas. Prepara, corrige exámenes finales y asiste a los mismos. Participa en otras actividades que involucren acciones académicas relacionadas con la asignatura, el área o la carrera que puedan darse espontáneamente. Recopila y selecciona material curricular. Coordina actividades con otras cátedras.### Profesor Adjunto:Colabora con el Coordinador y atiende sus comisiones. Colabora en la diagramación, distribución de tareas del equipo docente y seguimiento de las actividades asignadas a los docentes de la asignatura. Participa en las actividades internas de cátedra para favorecer la formación y actualización en contenidos disciplinares del personal de la cátedra. Desarrolla clases y atiende consultas académicas. Colabora en la preparación y corrección de los exámenes finales y asiste a los mismos. Recopila ydisciplinares del personal de la cátedra. Desarrolla clases y atiende consultas académicas. Colabora en la preparación y corrección de los exámenes finales y asiste a los mismos. Recopila y selecciona material curricular. Participa en reuniones convocadas por el Profesor a cargo de la asignatura. Colabora en el seguimiento de las actividades del personal auxiliar.### Jefe de Trabajos PrácticosTiene a su cargo la organización general de los contenidos de las guías de resolución de problemas y diseña los enunciados de parciales. Coordina la actividad de las y los auxiliares docentes. Coordina las actividades del laboratorio de informática. Participa en las actividades internas de cátedra para favorecer la formación y actualización en contenidos disciplinares del personal de la cátedra. Desarrolla clases y atiende consultas académicas. Participa en reuniones de cátedra. Colabora enpara favorecer la formación y actualización en contenidos disciplinares del personal de la cátedra. Desarrolla clases y atiende consultas académicas. Participa en reuniones de cátedra. Colabora en actividades tales como: revisión de material bibliográfico, preparación de exámenes parciales y evaluaciones. Supervisa el sitio web y administra los contenidos de materiales y novedades.### Ayudantes Diplomados.
+
+Desarrollan clases y atienden consultas. Coordinan la actividad áulica de su comisión. Coordinan y controlan las actividades de las y los Ayudantes Alumnos y Colaboradores (si hubiera). Participan en reuniones de Cátedra.
+---
+## Colaboran en otras actividades, a saber:
+
+revisión de material bibliográfico, desarrollo de apuntes, corrección de parciales, etc.
+
+## Reuniones de asignatura y área
+
+## Reuniones de cátedra|Involucrados|Lugar en el que se desarrollará la reunión|Fecha y Hora a desarrollarse la reunión|Tema/s a tratar en la reunión|Observaciones|
+|---|---|---|---|---|
+|Equipo completo de Cátedra|Presencial. Sala de profesores del DISI|Previo al comienzo del ciclo lectivo. Última semana de Febrero.|Coordinación del dictado de la materia.| ||---|---|---|---|---|
+|Equipo completo de Cátedra|Presencial. Sala de profesores del DISI|Previo al comienzo del ciclo lectivo. Última semana de Febrero.|Coordinación del dictado de la materia.| |
+|Equipo completo de Cátedra|Virtual|Final del primer cuatrimestre. Fecha y hora a determinar.|Revisión y evaluación de avance. Definición de contenidos a evaluar en el 2do parcial. Acuerdo de aplicación de medidas correctivas en el cronograma, de ser necesario.| ||Equipo completo de Cátedra|Virtual|Principios de Octubre. Fecha y hora a determinar.|Revisión y evaluación del estado de avance de la materia. Definición de contenidos a evaluar en el 2do parcial.| |
+|Equipo completo de Cátedra|Virtual|Final del segundo cuatrimestre. Fecha y hora a determinar.|Revisión y evaluación del ciclo lectivo.| |NOTA: durante el transcurso del año pueden llevarse a cabo otras reuniones sobre demanda para tratar temas diversos según vayan surgiendo.Al final de cada período académico, se realiza una autoevaluación del desarrollo de la asignatura, teniendo en cuenta aspectos cuantitativos y cualitativos. Se obtienen datos estadísticos del sistema de seguimiento de alumnos, analizándose los mismos en reuniones de cátedras y con los restantes docentes del área.
+---
+Atención y orientación a las y los estudiantes
+
+Actividades previas a las clases:
+Se recomienda que las y los estudiantes lean el material de clase en forma previa.Actividades previas a las clases:
+Se recomienda que las y los estudiantes lean el material de clase en forma previa.
+
+Actividades posteriores a la clase:
+En las clases se proponen problemas cuya resolución queda pendiente para ser completada por el alumnado y luego es revisada, mediante puesta en común, en la clase siguiente.
+
+Días y horarios de clases de consulta:Días y horarios de clases de consulta:
+
+Las y los Profesores tienen un espacio de consulta semanal, a demanda. En general los horarios asignados a tal fin son: miércoles 20.30h y jueves 11h. Adicionalmente en fechas previas a parciales y exámenes se habilitan horarios especiales de consultas.
+En forma permanente está habilitado un foro de consultas en el campus virtual de la materia.
+Consultas en forma virtual a través de mails personales, en forma permanente todo el año.ANEXO 1: FUNCIÓN INVESTIGACIÓN Y EXTENSIÓN (si corresponde)
+No aplica a la materia
+
+Lineamientos de Investigación de la cátedra
+
+Lineamientos de Extensión de la cátedra
+
+Actividades en las que pueden participar las y los estudiantes
+
+|Eje: Investigación|Proyecto|Cronograma de actividades|
+|---|---|---|
+| | | |
+|Eje: Extensión|Proyecto|Cronograma de actividades|
+| | | |

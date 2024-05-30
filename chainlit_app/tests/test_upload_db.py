@@ -1,6 +1,7 @@
 def test_upload():
     from app.uploader import upload_pdf_to_database
 
+    # TODO add route to upload
     upload_pdf_to_database(
         text_file="./tests/pdfs_prueba/bitcoin_es.pdf",
         theme="Bitcoin",

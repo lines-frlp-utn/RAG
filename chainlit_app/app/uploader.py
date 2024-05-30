@@ -1,50 +1,28 @@
 from app.models import embedding_model
-from app.splitter import text_splitter
+from app.parser import prepare_chunks_from_docs
 from chromadb import PersistentClient
-
-# from langchain_community.document_loaders import UnstructuredHTMLLoader
 from langchain_community.vectorstores import Chroma
-from langchain_text_splitters import HTMLHeaderTextSplitter
-from llmsherpa.readers import LayoutPDFReader
-
-llmsherpa_api_url = "https://readers.llmsherpa.com/api/document/developer/parseDocument?renderFormat=all"
-pdf_reader = LayoutPDFReader(llmsherpa_api_url)
-
-headers_to_split_on = [
-    ("h1", "Header 1"),
-    ("h2", "Header 2"),
-    ("h3", "Header 3"),
-    ("h4", "Header 4"),
-]
-
-html_splitter = HTMLHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
 
 client = PersistentClient("./database/")
 
 
 def upload_pdf_to_database(text_file, theme, subtheme, collection_name):
-    doc = pdf_reader.read_pdf(text_file)
-    content = doc.to_html()
+    client.get_or_create_collection(collection_name)
+    vector_db = Chroma(
+        client=client,
+        collection_name=collection_name,
+        embedding_function=embedding_model,
+    )
+    chunks = prepare_chunks_from_docs(
+        file_path=text_file,
+        theme=theme,
+        subtheme=subtheme,
+    )
 
-    # chunks = html_splitter.split_text(content)
-    html_splited_text = html_splitter.split_text(content)
-    chunks = text_splitter.split_documents(html_splited_text)
     for chunk in chunks:
-        chunk.metadata.update(
-            {
-                "source": text_file,
-                "theme": theme,
-                "subtheme": subtheme,
-            }
-        )
         print(chunk)
 
-    Chroma.from_documents(
-        documents=chunks,
-        embedding=embedding_model,
-        collection_name=collection_name,
-        client=client,
-    )
+    vector_db.add_documents(chunks)
 
     print(text_file + " cargado correctamente...")
 
