@@ -4,6 +4,7 @@ from app.models import embedding_model, get_conversational_answer
 from app.splitter import pdf_to_chunks
 from app.uploader import get_context_with_filters, get_db, upload_pdf_to_database
 from app.vector_db import vector_db
+from app.databases import post_embeddings, get_context_from_db
 from chainlit.input_widget import Select, Slider, Switch
 from langchain.memory import ConversationBufferMemory
 
@@ -57,9 +58,11 @@ async def start():
     file = files[0]
     msg = cl.Message(content=f"Procesando archivo `{file.name}`...", disable_feedback=True)
     await msg.send()
-    await cl.make_async(upload_pdf_to_database)(
+    embeddings = await cl.make_async(upload_pdf_to_database)(
         text_file=file.path, theme="-", subtheme="-", collection_name="prueba_lines"
-    )
+    )##TODO:llamado a generador de embeddings
+
+    await cl.make_async(post_embeddings)(collection_name="prueba_lines", dataWithEmbeddings=embeddings)
 
     msg.content = f"Archivo `{file.name}` cargado exitosamente"
     await msg.update()
@@ -73,8 +76,12 @@ async def update_settings(settings):
 @cl.step
 async def vectordb_results_step(query):
     settings = cl.user_session.get("settings")
-    results = get_context_with_filters(
-        settings["collection"], settings["theme"], settings["subtheme"], query
+    #TODO:query a embeddings
+    results = await cl.make_async(get_context_from_db)(
+        collection_name=settings["collection"], 
+        theme=settings["theme"], 
+        subtheme=settings["subtheme"], 
+        query=query
     )
     cl.context.current_step.output = results
     context = await context_step(results)

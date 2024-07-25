@@ -24,7 +24,16 @@ services:
       - 8007:8007
     networks:
       - lines-network
-  
+
+  db-milvus:
+    image: milvus
+    build:
+      context: vectordbs/Milvus
+      dockerfile: Dockerfile
+    ports:
+      - 8006:8006
+    networks:
+      - lines-network
 
 networks:
   lines-network:

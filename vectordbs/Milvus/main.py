@@ -36,10 +36,10 @@ def get_context_with_filters(collection_name, theme, subtheme, query: list):
     return respuesta
 
 
-
 @app.post("/upload-embeddings")
 def upload(dataWithEmbeddings: dict | list[dict], collection_name):
     upload_pdf_to_vector_db(dataWithEmbeddings, collection_name)
+
 
 @app.post("/get-context")
 def get_context(collection_name, theme, subtheme, query: list):
