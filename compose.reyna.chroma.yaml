@@ -1,0 +1,44 @@
+services:
+
+  app:
+    build:
+      context: chainlit_app/
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    environment:
+      - MODEL_URL=http://model-reyna
+      - MODEL_PORT=8007
+    volumes:
+      - rag-volume:/chainlit_app/database
+    networks:
+      - lines-network
+
+
+  model-reyna:
+    image: reyna
+    build:
+      context: llm_models/reyna_cpu
+      dockerfile: Dockerfile
+    ports:
+      - 8007:8007
+    networks:
+      - lines-network
+
+  db-milvus:
+    image: milvus
+    build:
+      context: vectordbs/Chroma
+      dockerfile: Dockerfile
+    ports:
+      - 8006:8006
+    networks:
+      - lines-network
+
+networks:
+  lines-network:
+    driver: bridge
+
+volumes:
+  rag-volume:
+    driver: local

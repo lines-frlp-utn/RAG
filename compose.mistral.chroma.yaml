@@ -1,0 +1,50 @@
+services:
+
+  app:
+    build:
+      context: chainlit_app/
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    environment:
+      - MODEL_URL=http://model-mistral
+      - MODEL_PORT=8007
+    volumes:
+      - rag-volume:/chainlit_app/database
+    networks:
+      - lines-network
+
+  model-mistral:
+    image: llm-model
+    build:
+      context: llm_models/mistral
+      dockerfile: Dockerfile
+    ports:
+      - 8007:8007
+    networks:
+      - lines-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  db-milvus:
+    image: milvus
+    build:
+      context: vectordbs/Chroma
+      dockerfile: Dockerfile
+    ports:
+      - 8006:8006
+    networks:
+      - lines-network
+
+networks:
+  lines-network:
+    driver: bridge
+
+volumes:
+  rag-volume:
+    driver: local
