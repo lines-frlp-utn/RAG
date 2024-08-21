@@ -1,6 +1,7 @@
 import requests
 from app.config import conf
 from langchain_community.embeddings import SentenceTransformerEmbeddings
+from langchain_openai import ChatOpenAI
 
 """This model maps sentences & paragraphs to a 384 dimensional dense vector space
 and can be used for tasks like clustering or semantic search.
@@ -10,9 +11,12 @@ EMB_MULTI_MINILM = "sentence-transformers/distiluse-base-multilingual-cased-v2"
 
 embedding_model = SentenceTransformerEmbeddings(model_name=EMB_MULTI_MINILM)
 
+llm = ChatOpenAI(
+    model="llama3.1", base_url="http://localhost:11434/v1", temperature=0, api_key="none"
+)
+
 
 def get_conversational_answer(prompt, context):
-    answer = requests.post(
-        f"{conf.MODEL_URL}:{conf.MODEL_PORT}/submit-prompt?prompt={prompt}&context={context}"
-    )
-    return answer.json()
+    # TODO use context
+    answer = llm.invoke(prompt)
+    return answer.content
