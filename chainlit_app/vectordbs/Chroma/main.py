@@ -1,13 +1,13 @@
-from chromadb import PersistentClient
-from langchain_community.vectorstores import Chroma
+import chromadb
+# from langchain_community.vectorstores import Chroma
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 import fastapi 
 import uuid
 
 app = fastapi.FastAPI()
 
-client = PersistentClient("./database/")
+client = chromadb.PersistentClient("./database/")
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=800, 
@@ -19,22 +19,22 @@ text_splitter = RecursiveCharacterTextSplitter(
     ]
 )
 
-def upload_pdf_to_vector_db(dataWithEmbeddings: dict | list[dict], collection_name):
+def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
     vector_db = client.get_or_create_collection(collection_name)
-
+    
     for doc in dataWithEmbeddings:
         vector_db.add(
-            ids=str(uuid.uuid4()),
-            embeddings=doc.embeddings,
-            documents=text_splitter.create_documents(doc.text), #si tira error, hay que revisar esto
+            ids=[doc['id']],
+            embeddings=[doc['vector'].tolist()],
+            documents=[doc['text']],
         )
         print(f"{doc} cargado correctamente...")
 
-def get_context_with_filters(collection_name, theme, subtheme, query: list):
-    if collection_name != " ":
-        collection = client.get_collection(
-            name=collection_name,
-        )
+def get_context_with_filters(collection_name, query: list):
+    
+    collection = client.get_collection(
+        name=collection_name,
+    )
     
     response = collection.query(query_embeddings=query)
     
@@ -54,3 +54,4 @@ def upload(dataWithEmbeddings: dict | list[dict], collection_name):
 @app.post("/get-context")
 def get_context(collection_name, theme, subtheme, query: list):
     return get_context_with_filters(collection_name, theme, subtheme, query)
+

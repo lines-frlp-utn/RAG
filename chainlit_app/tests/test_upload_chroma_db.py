@@ -1,7 +1,7 @@
-def test_upload(): 
-    from vectordbs.Milvus.main import upload_pdf_to_vector_db
+def test_upload():
+    from vectordbs.Chroma.main import upload_pdf_to_vector_db
     from sentence_transformers import SentenceTransformer
-    # Text strings to search from.
+    import uuid
     embedding_fn = SentenceTransformer('all-MiniLM-L6-V2', device='cpu')
     docs = [
         "Artificial intelligence was founded as an academic discipline in 1956.",
@@ -11,7 +11,7 @@ def test_upload():
     # Use fake representation with random vectors (768 dimension).
     vectors = embedding_fn.encode(docs)
     data = [
-    {"id": i, "vector": vectors[i], "text": docs[i], "subject": "history"}
+    {"id": str(uuid.uuid4()), "vector": vectors[i], "text": docs[i], "subject": "history"}
     for i in range(len(vectors))
     ]
 
@@ -22,7 +22,7 @@ def test_upload():
     upload_pdf_to_vector_db(dataWithEmbeddings=data, collection_name=collection_name)
 
 def test_retrive():
-    from vectordbs.Milvus.main import get_context_with_filters
+    from vectordbs.Chroma.main import get_context_with_filters
     from sentence_transformers import SentenceTransformer
     collection_name = 'Prueba'
     embedding_fn = SentenceTransformer('all-MiniLM-L6-V2', device='cpu')
