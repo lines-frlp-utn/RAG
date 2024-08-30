@@ -1,37 +1,31 @@
 def test_upload(): 
-    from vectordbs.Milvus.main import upload_pdf_to_vector_db
+    from chainlit_app.vectordbs.Milvus.main import upload_pdf_to_vector_db
     from sentence_transformers import SentenceTransformer
-    import fitz 
-    
-    def leer_pdf(ruta_pdf):
-        documento = fitz.open(ruta_pdf)
-        texto_completo = ""
-        
-        for pagina_num in range(documento.page_count):
-            pagina = documento.load_page(pagina_num)
-            texto_completo += pagina.get_text("text")
-    
-        documento.close()
-        return texto_completo
+    # Text strings to search from.
+    embedding_fn = SentenceTransformer('all-MiniLM-L6-V2', device='cpu')
+    docs = [
+        "Artificial intelligence was founded as an academic discipline in 1956.",
+        "Alan Turing was the first person to conduct substantial research in AI.",
+        "Born in Maida Vale, London, Turing was raised in southern England.",
+    ]
+    # Use fake representation with random vectors (768 dimension).
+    vectors = embedding_fn.encode(docs)
+    data = [
+    {"id": i, "vector": vectors[i], "text": docs[i], "subject": "history"}
+    for i in range(len(vectors))
+    ]
 
-    def dividir_texto_por_puntos(texto):
-        return texto.split('.')
-
-    ruta_pdf = "./chainlit_app/tests/pdfs_prueba/algoritmos.pdf"
-
-    texto = leer_pdf(ruta_pdf)
-    fragmentos = dividir_texto_por_puntos(texto)
-
-    modelo = SentenceTransformer('all-MiniLM-L6-V2', device='cpu')  
-    input_milvus = []  
-    for i in range(len(fragmentos)):
-        chunk = fragmentos[i]
-        vector = modelo.encode(fragmentos[i])
-        diccionario = {
-            "embedding": vector.tolist(), 
-            "texto": chunk
-        }
-        input_milvus.append(diccionario)
+    print("Data has", len(data), "entities, each with fields: ", data[0].keys())
+    print("Vector dim:", len(data[0]["vector"]))
 
     collection_name = 'Prueba'
-    upload_pdf_to_vector_db(dataWithEmbeddings=input_milvus, collection_name=collection_name)
+    upload_pdf_to_vector_db(dataWithEmbeddings=data, collection_name=collection_name)
+
+def test_retrive():
+    from vectordbs.Milvus.main import get_context_with_filters
+    from sentence_transformers import SentenceTransformer
+    collection_name = 'Prueba'
+    embedding_fn = SentenceTransformer('all-MiniLM-L6-V2', device='cpu')
+    query = embedding_fn.encode(["who was Alan Turing?"])
+    response = get_context_with_filters(collection_name=collection_name, query=query)
+    print(response)

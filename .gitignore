@@ -161,3 +161,4 @@ cython_debug/
 .files
 /chainlit_app/database
 
+volumes

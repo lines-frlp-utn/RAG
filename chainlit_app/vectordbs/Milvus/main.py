@@ -1,20 +1,18 @@
-from pymilvus import MilvusClient
 import fastapi
 
 app = fastapi.FastAPI()
 
-client = MilvusClient("./database/milvus_demo.db")
+from pymilvus import MilvusClient
+client = MilvusClient()
 
-def upload_pdf_to_vector_db(dataWithEmbeddings: dict | list[dict], collection_name):
+def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
 
-    if client.has_collection(collection_name=collection_name) == False:
-        client.create_collection(
-            collection_name = collection_name,
-            metric_type = "COSINE", #revisar
-            schema = None, #revisar
-            )
-        print("Collection created")
-
+    if client.has_collection(collection_name=collection_name):
+        client.drop_collection(collection_name=collection_name)
+    client.create_collection(
+        collection_name=collection_name,
+        dimension=384,  # The vectors we will use in this demo has 768 dimensions
+    )
     result = client.insert(
         collection_name = collection_name,
         data = dataWithEmbeddings,
@@ -24,14 +22,12 @@ def upload_pdf_to_vector_db(dataWithEmbeddings: dict | list[dict], collection_na
     print(result)
 
 
-def get_context_with_filters(collection_name, theme, subtheme, query: list):
+def get_context_with_filters(collection_name, query):
     respuesta = client.search(
-        data=[query], ##Valor que buscamos
-        collection_name = collection_name,
-        #anns_field="embedding", ##Campo con el que comparamos el embedding de consulta
-        param={"metric_type": "COSINE", "params": {"nprobe":2}}, ##Definimos el tipo de metrica | nprobe 2 => 2 centroids INVESTIGAR ESTOS PARAMETROS POR AHORA LO DEJO DEFAULT
-        limit=5, ##Limita a 5 resultados por busqueda
-        #output_fields=["texto"] ##Campo que queremos que devuelva
+        collection_name="demo_collection",  # target collection
+        data=query,  # query vectors
+        limit=2,  # number of returned entities
+        output_fields=["text", "subject"],  # specifies fields to be returned
     )
     return respuesta
 
