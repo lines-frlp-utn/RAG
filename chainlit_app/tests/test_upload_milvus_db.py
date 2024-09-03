@@ -1,6 +1,10 @@
+import hashlib
+
+
 def test_upload(): 
     from vectordbs.Milvus.main import upload_pdf_to_vector_db
     from sentence_transformers import SentenceTransformer
+    
     # Text strings to search from.
     embedding_fn = SentenceTransformer('all-MiniLM-L6-V2', device='cpu')
     docs = [
@@ -8,11 +12,15 @@ def test_upload():
         "Alan Turing was the first person to conduct substantial research in AI.",
         "Born in Maida Vale, London, Turing was raised in southern England.",
     ]
-    # Use fake representation with random vectors (768 dimension).
+    
     vectors = embedding_fn.encode(docs)
+    
+    def generate_id(text):
+        return int(hashlib.md5(text.encode()).hexdigest(), 16) % (10 ** 8)
+    
     data = [
-    {"id": i, "vector": vectors[i], "text": docs[i], "subject": "history"}
-    for i in range(len(vectors))
+        {"id": generate_id(docs[i]), "vector": vectors[i], "text": docs[i]}
+        for i in range(len(vectors))
     ]
 
     print("Data has", len(data), "entities, each with fields: ", data[0].keys())
