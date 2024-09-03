@@ -7,8 +7,8 @@ and can be used for tasks like clustering or semantic search.
 """
 
 EMB_MULTI_MINILM = "sentence-transformers/distiluse-base-multilingual-cased-v2"
-
-embedding_model = SentenceTransformerEmbeddings(model_name=EMB_MULTI_MINILM)
+model_bertMini = "sentence-transformers/all-MiniLM-L6-v2"
+embedding_model = SentenceTransformerEmbeddings(model_name=model_bertMini)
 
 
 def get_conversational_answer(prompt, context):

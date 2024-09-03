@@ -2,12 +2,15 @@ import chainlit as cl
 from app.chunk_visualization import make_umap
 from app.models import embedding_model, get_conversational_answer
 from app.splitter import pdf_to_chunks
-from app.uploader import get_context_with_filters, get_db, upload_pdf_to_database
+# from app.uploader import get_context_with_filters, get_db, upload_pdf_to_database
 from app.vector_db import vector_db
 from app.databases import post_embeddings, get_context_from_db
 from chainlit.input_widget import Select, Slider, Switch
 from langchain.memory import ConversationBufferMemory
+from app.embeddingGenerator import EmbeddingGenerator, extract_text_from_pdf
 
+embedding_generator = EmbeddingGenerator()
+collection_name = 'prueba_lines'
 
 def format_docs(docs):
     return "\n\n".join([d.page_content for d in docs])
@@ -58,11 +61,10 @@ async def start():
     file = files[0]
     msg = cl.Message(content=f"Procesando archivo `{file.name}`...", disable_feedback=True)
     await msg.send()
-    embeddings = await cl.make_async(upload_pdf_to_database)(
-        text_file=file.path, theme="-", subtheme="-", collection_name="prueba_lines"
-    )##TODO:llamado a generador de embeddings
+    texts = texts = extract_text_from_pdf(file.path)
+    embeddings = await cl.make_async(embedding_generator.format_for_database)(texts)
 
-    await cl.make_async(post_embeddings)(collection_name="prueba_lines", dataWithEmbeddings=embeddings)
+    await cl.make_async(post_embeddings)(collection_name=collection_name, dataWithEmbeddings=embeddings)
 
     msg.content = f"Archivo `{file.name}` cargado exitosamente"
     await msg.update()
@@ -76,12 +78,12 @@ async def update_settings(settings):
 @cl.step
 async def vectordb_results_step(query):
     settings = cl.user_session.get("settings")
-    #TODO:query a embeddings
+    query_embedding = await cl.make_async(embedding_generator.get_embeddings)(query).tolist()
     results = await cl.make_async(get_context_from_db)(
         collection_name=settings["collection"], 
-        theme=settings["theme"], 
-        subtheme=settings["subtheme"], 
-        query=query
+        # theme=settings["theme"], 
+        # subtheme=settings["subtheme"], 
+        query=query_embedding,
     )
     cl.context.current_step.output = results
     context = await context_step(results)
@@ -112,35 +114,36 @@ async def main(message: cl.Message):
     msg = cl.Message(content="")  # Muestra un loader mientras carga el mensaje
     await msg.send()
 
-    if message.elements:
-        file = pdf_to_chunks(message.elements[0])
-        upload_pdf_to_database(
-            text_file=file.path,
-            theme="-",
-            subtheme="-",
-            collection_name="prueba_lines",
-        )
+    # if message.elements:
+    #     file = pdf_to_chunks(message.elements[0])
+    #     upload_pdf_to_database(
+    #         text_file=file.path,
+    #         theme="-",
+    #         subtheme="-",
+    #         collection_name="prueba_lines",
+    #     )
 
     if message.content.startswith("umap"):
-        v_db = get_db(settings["collection"]) if settings["collection"] != " " else vector_db
-        query = message.content[5:]
-        query_embedding = embedding_model.embed_query(query)
-        results = (
-            get_context_with_filters(
-                settings["collection"], settings["theme"], settings["subtheme"], query
-            )
-            if settings["collection"] != " "
-            else v_db.similarity_search(query)
-        )
-        retrieved_embeddings = []
-        for doc in results:
-            retrieved_embeddings.append(embedding_model.embed_query(doc.page_content))
-        umap_path = await cl.make_async(
-            make_umap
-        )(
-            v_db, retrieved_embeddings, query_embedding, query, session_number
-        )  # TODO: Arreglar porque ya no tenemos vector_db, tenemos retriever, capaz en uploader habria que hacer otra funcion que traiga la coleccion
-        msg.elements = [cl.Image(path=umap_path, name="umap", display="inline")]
+        a=0
+        # v_db = get_db(settings["collection"]) if settings["collection"] != " " else vector_db
+        # query = message.content[5:]
+        # query_embedding = embedding_model.embed_query(query)
+        # results = (
+        #     get_context_with_filters(
+        #         settings["collection"], settings["theme"], settings["subtheme"], query
+        #     )
+        #     if settings["collection"] != " "
+        #     else v_db.similarity_search(query)
+        # )
+        # retrieved_embeddings = []
+        # for doc in results:
+        #     retrieved_embeddings.append(embedding_model.embed_query(doc.page_content))
+        # umap_path = await cl.make_async(
+        #     make_umap
+        # )(
+        #     v_db, retrieved_embeddings, query_embedding, query, session_number
+        # )  # TODO: Arreglar porque ya no tenemos vector_db, tenemos retriever, capaz en uploader habria que hacer otra funcion que traiga la coleccion
+        # msg.elements = [cl.Image(path=umap_path, name="umap", display="inline")]
     else:
         query = message.content
         context = await vectordb_results_step(query)
