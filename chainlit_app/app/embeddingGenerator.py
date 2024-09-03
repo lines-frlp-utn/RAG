@@ -3,7 +3,7 @@ import fitz  # PyMuPDF
 from transformers import AutoTokenizer, AutoModel
 import torch
 
-model_distibert = "distilbert-base-multilingual-cased"
+#model_distibert = "distilbert-base-multilingual-cased"
 model_bertMini = "sentence-transformers/all-MiniLM-L6-v2"
 
 class EmbeddingGenerator:
