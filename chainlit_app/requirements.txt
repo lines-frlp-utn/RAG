@@ -156,6 +156,4 @@ wsproto==1.2.0
 yarl==1.9.4
 zipp==3.18.1
 llama-parse==0.4.2
-fitz==0.0.1.dev2
 PyMuPDF==1.24.10
-PyMuPDFb==1.24.10

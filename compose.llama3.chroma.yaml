@@ -10,7 +10,9 @@ services:
       - chainlit_app/.env
     environment:
       - MODEL_URL=http://model-llama
+      - DB_URL=http://db-chroma
       - MODEL_PORT=8007
+      - DB_PORT=8006
     volumes:
       - rag-volume:/chainlit_app/database
     networks:
@@ -33,8 +35,8 @@ services:
               count: 1
               capabilities: [gpu]
 
-  db-milvus:
-    image: milvus
+  db-chroma:
+    image: chroma
     build:
       context: vectordbs/Chroma
       dockerfile: Dockerfile

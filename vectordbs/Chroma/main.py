@@ -2,7 +2,15 @@ import chromadb
 # from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import fastapi 
-import uuid
+from pydantic import BaseModel
+
+class EmbeddingData(BaseModel):
+    dataWithEmbeddings: list[dict]
+    collection_name: str
+
+class QueryData(BaseModel):
+    collection_name: str
+    query: list
 
 app = fastapi.FastAPI()
 
@@ -30,28 +38,33 @@ def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
         )
         print(f"{doc} cargado correctamente...")
 
-def get_context_with_filters(collection_name, query: list):
+def get_context_with_filters(collection_name, query):
     
     collection = client.get_collection(
         name=collection_name,
     )
     
-    response = collection.query(query_embeddings=query)
+    response = collection.query(query_embeddings=query, n_results=1)
     
-    final_response = []
-    for doc in response:
-        if doc not in final_response:
-            final_response.append(doc)
-    print(final_response)
-    return final_response
+    # final_response = []
+    # for doc in response:
+    #     if doc not in final_response:
+    #         final_response.append(doc)
+    # print(final_response)
+    print(response)
+    return response["documents"]
 
 
 @app.post("/upload-embeddings")
-def upload(dataWithEmbeddings: dict | list[dict], collection_name):
+def upload(data: EmbeddingData):
+    dataWithEmbeddings = data.dataWithEmbeddings
+    collection_name = data.collection_name
     upload_pdf_to_vector_db(dataWithEmbeddings, collection_name)
-
+    return {"status": "success"}
 
 @app.post("/get-context")
-def get_context(collection_name, theme, subtheme, query: list):
-    return get_context_with_filters(collection_name, theme, subtheme, query)
+def get_context(data: QueryData):
+    query = data.query
+    collection_name = data.collection_name
+    return get_context_with_filters(collection_name, query)
 

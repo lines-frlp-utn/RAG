@@ -8,11 +8,13 @@ services:
       - 8000:8000
     environment:
       - MODEL_URL=http://model-reyna
+      - DB_URL=http://db-chroma
       - MODEL_PORT=8007
+      - DB_PORT=8006
     volumes:
       - rag-volume:/chainlit_app/database
     networks:
-      - lines-network
+      - lines
 
 
   model-reyna:
@@ -23,20 +25,20 @@ services:
     ports:
       - 8007:8007
     networks:
-      - lines-network
+      - lines
 
-  db-milvus:
-    image: milvus
+  db-chroma:
+    image: chorma
     build:
       context: vectordbs/Chroma
       dockerfile: Dockerfile
     ports:
       - 8006:8006
     networks:
-      - lines-network
+      - lines
 
 networks:
-  lines-network:
+  lines:
     driver: bridge
 
 volumes:

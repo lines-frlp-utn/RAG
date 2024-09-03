@@ -62,5 +62,4 @@ services:
 
 networks:
   default:
-    name: lines-network
-    driver: bridge
+    name: milvus

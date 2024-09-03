@@ -61,12 +61,12 @@ async def start():
     file = files[0]
     msg = cl.Message(content=f"Procesando archivo `{file.name}`...", disable_feedback=True)
     await msg.send()
-    texts = texts = extract_text_from_pdf(file.path)
+    texts = extract_text_from_pdf(file.path)
     embeddings = await cl.make_async(embedding_generator.format_for_database)(texts)
 
-    await cl.make_async(post_embeddings)(collection_name=collection_name, dataWithEmbeddings=embeddings)
+    result=await cl.make_async(post_embeddings)(collection_name=collection_name, dataWithEmbeddings=embeddings)
 
-    msg.content = f"Archivo `{file.name}` cargado exitosamente"
+    msg.content = f"Archivo `{file.name}` cargado exitosamente, `{result}`"
     await msg.update()
 
 
@@ -78,11 +78,9 @@ async def update_settings(settings):
 @cl.step
 async def vectordb_results_step(query):
     settings = cl.user_session.get("settings")
-    query_embedding = await cl.make_async(embedding_generator.get_embeddings)(query).tolist()
+    query_embedding = await cl.make_async(embedding_generator.get_embeddings)(query)
     results = await cl.make_async(get_context_from_db)(
         collection_name=settings["collection"], 
-        # theme=settings["theme"], 
-        # subtheme=settings["subtheme"], 
         query=query_embedding,
     )
     cl.context.current_step.output = results
@@ -94,7 +92,7 @@ async def vectordb_results_step(query):
 async def context_step(results):
     context = ""
     for doc in results:
-        context = f"{context} {doc.page_content}"
+        context = f"{context} {doc}"
 
     cl.context.current_step.output = context
     return context
