@@ -21,11 +21,11 @@ text_splitter = RecursiveCharacterTextSplitter(
 
 def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
     vector_db = client.get_or_create_collection(collection_name)
-    
+
     for doc in dataWithEmbeddings:
         vector_db.add(
-            ids=[doc['id']],
-            embeddings=[doc['vector'].tolist()],
+            ids=[str(doc['id'])],
+            embeddings=[doc['vector']],
             documents=[doc['text']],
         )
         print(f"{doc} cargado correctamente...")

@@ -27,7 +27,7 @@ def get_context_with_filters(collection_name, query):
         collection_name="demo_collection",  # target collection
         data=query,  # query vectors
         limit=2,  # number of returned entities
-        output_fields=["text", "subject"],  # specifies fields to be returned
+        output_fields=["text"],  # specifies fields to be returned
     )
     return respuesta
 
