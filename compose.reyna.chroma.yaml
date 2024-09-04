@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8000:8000
+    env_file:
+      - chainlit_app/.env
     environment:
       - MODEL_URL=http://model-reyna
       - DB_URL=http://db-chroma

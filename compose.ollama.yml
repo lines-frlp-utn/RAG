@@ -1,0 +1,45 @@
+services:
+
+  app:
+    build:
+      context: chainlit_app/
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    env_file:
+      - chainlit_app/.env
+    environment:
+      - MODEL_URL=http://model-llama
+      - MODEL_PORT=8007
+    volumes:
+      - rag-volume:/chainlit_app/database
+    networks:
+      - lines-network
+
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      - OLLAMA_DEBUG=true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    # command: "run llama3.1"
+    networks:
+      - lines-network
+
+volumes:
+  ollama:
+    name: ollama
+  rag-volume:
+    driver: local
+
+networks:
+  lines-network:
+    driver: bridge
