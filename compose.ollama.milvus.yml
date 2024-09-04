@@ -9,7 +9,7 @@ services:
     env_file:
       - chainlit_app/.env
     environment:
-      - MODEL_URL=${MODEL_URL:-http://localhost}
+      - MODEL_URL=${MODEL_URL:-http://ollama}
       - MODEL_PORT=${MODEL_PORT:-11434}
       - DB_URL=http://db-milvus
       - DB_PORT=8006
@@ -30,7 +30,7 @@ services:
         reservations:
           devices:
             - capabilities: [gpu]
-    # command: "run llama3.1"
+    # command: "ollama run llama3.1"
 
 
   db-milvus:
