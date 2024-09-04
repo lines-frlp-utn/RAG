@@ -12,11 +12,15 @@ model_bertMini = "sentence-transformers/all-MiniLM-L6-v2"
 embedding_model = SentenceTransformerEmbeddings(model_name=model_bertMini)
 
 llm = ChatOpenAI(
-    model="llama3.1", base_url="http://localhost:11434/v1", temperature=0, api_key="none"
+    model="llama3.1",
+    base_url=f"{conf.MODEL_URL}:{conf.MODEL_PORT}/v1",
+    temperature=0,
+    api_key="none",
 )
 
 
 def get_conversational_answer(prompt, context):
     # TODO use context
+    prompt = f"Context: {context}. user: {prompt}"
     answer = llm.invoke(prompt)
     return answer.content
