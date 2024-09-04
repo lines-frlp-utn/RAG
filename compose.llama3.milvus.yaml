@@ -15,8 +15,6 @@ services:
       - DB_PORT=8006
     volumes:
       - rag-volume:/chainlit_app/database
-    networks:
-      - lines-network
 
   model-llama:
     image: llama3
@@ -25,8 +23,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8007:8007
-    networks:
-      - lines-network
     deploy:
       resources:
         reservations:
@@ -42,8 +38,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8006:8006
-    networks:
-      - lines-network
 
   etcd:
     container_name: milvus-etcd
@@ -61,8 +55,6 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
-    networks:
-      - lines-network
 
   minio:
     container_name: milvus-minio
@@ -81,8 +73,7 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
-    networks:
-      - lines-network
+
 
   standalone:
     container_name: milvus-standalone
@@ -107,13 +98,11 @@ services:
     depends_on:
       - "etcd"
       - "minio"
-    networks:
-      - lines-network
 
 
 networks:
-  lines-network:
-    driver: bridge
+  default:
+    name: milvus
 
 
 volumes:

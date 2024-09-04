@@ -13,6 +13,6 @@ embedding_model = SentenceTransformerEmbeddings(model_name=model_bertMini)
 
 def get_conversational_answer(prompt, context):
     answer = requests.post(
-        f"{conf.MODEL_URL}:{conf.MODEL_PORT}/submit-prompt?prompt={prompt}&context={context}"
+        url=f"{conf.MODEL_URL}:{conf.MODEL_PORT}/submit-prompt?prompt={prompt}&context={context}", headers={"Content-Type": "application/json"}
     )
     return answer.json()

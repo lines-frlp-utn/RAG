@@ -13,8 +13,6 @@ services:
       - DB_PORT=8006
     volumes:
       - rag-volume:/chainlit_app/database
-    networks:
-      - lines
 
 
   model-reyna:
@@ -24,8 +22,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8007:8007
-    networks:
-      - lines
 
   db-chroma:
     image: chorma
@@ -34,12 +30,10 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8006:8006
-    networks:
-      - lines
 
 networks:
-  lines:
-    driver: bridge
+  default:
+    name: milvus
 
 volumes:
   rag-volume:

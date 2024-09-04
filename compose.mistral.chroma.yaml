@@ -7,14 +7,12 @@ services:
     ports:
       - 8000:8000
     environment:
-      - MODEL_URL=http://model-llama
+      - MODEL_URL=http://model-mistral
       - DB_URL=http://db-chroma
       - MODEL_PORT=8007
       - DB_PORT=8006
     volumes:
       - rag-volume:/chainlit_app/database
-    networks:
-      - lines-network
 
   model-mistral:
     image: llm-model
@@ -23,8 +21,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8007:8007
-    networks:
-      - lines-network
     deploy:
       resources:
         reservations:
@@ -40,12 +36,10 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8006:8006
-    networks:
-      - lines-network
 
 networks:
-  lines-network:
-    driver: bridge
+  default:
+    name: milvus
 
 volumes:
   rag-volume:
