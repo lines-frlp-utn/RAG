@@ -158,3 +158,4 @@ zipp==3.18.1
 llama-parse==0.4.2
 langchain_openai
 PyMuPDF==1.24.10
+aim==3.20.1
