@@ -46,6 +46,23 @@ async def start():
                 values=["-"],
                 initial_index=0,
             ),
+            Select(
+                id="model",
+                label="model",
+                values=[
+                    "llama3.1",
+                    "gemma2",
+                ],
+                initial_index=0,
+            ),
+            Slider(
+                id="temperature",
+                label="temperature",
+                min=0,
+                max=1,
+                step=0.1,
+                initial=0,
+            ),
         ]
     ).send()
     await update_settings(settings)
@@ -102,8 +119,8 @@ async def context_step(results):
 
 
 @cl.step
-async def llm_step(query, context):
-    respuesta = await cl.make_async(get_conversational_answer)(query, context)
+async def llm_step(query, context, **kwargs):
+    respuesta = await cl.make_async(get_conversational_answer)(query, context, **kwargs)
     return respuesta
 
 
@@ -148,7 +165,7 @@ async def main(message: cl.Message):
     else:
         query = message.content
         context = await vectordb_results_step(query)
-        respuesta = await llm_step(query, context)
+        respuesta = await llm_step(query, context, model=settings["model"], temperature=settings["temperature"])
         msg.content = f"{respuesta}"
 
     await msg.update()  # actualizamos el mensaje con los nuevos datos
