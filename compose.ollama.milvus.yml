@@ -15,6 +15,7 @@ services:
       - DB_PORT=8006
     volumes:
       - rag-volume:/chainlit_app/database
+      - transformer-volume:~/.cache/huggingface/transformers/
 
   ollama:
     image: ollama/ollama
@@ -101,10 +102,13 @@ services:
       - "etcd"
       - "minio"
 
+  
 volumes:
   ollama:
     name: ollama
   rag-volume:
+    driver: local
+  transformer-volume:
     driver: local
 
 networks:
