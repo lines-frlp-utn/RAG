@@ -9,27 +9,28 @@ services:
     env_file:
       - chainlit_app/.env
     environment:
-      - MODEL_URL=http://model-llama
+      - MODEL_URL=${MODEL_URL:-http://ollama}
+      - MODEL_PORT=${MODEL_PORT:-11434}
       - DB_URL=http://db-chroma
-      - MODEL_PORT=8007
       - DB_PORT=8006
     volumes:
       - rag-volume:/chainlit_app/database
 
-  model-llama:
-    image: llama3
-    build:
-      context: llm_models/llama3
-      dockerfile: Dockerfile
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
     ports:
-      - 8007:8007
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      - OLLAMA_DEBUG=true
     deploy:
       resources:
         reservations:
           devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+            - capabilities: [gpu]
+    # command: "ollama run llama3.1"
 
   db-chroma:
     image: chroma
@@ -44,5 +45,8 @@ networks:
     name: milvus
 
 volumes:
+  ollama:
+    name: ollama
   rag-volume:
     driver: local
+

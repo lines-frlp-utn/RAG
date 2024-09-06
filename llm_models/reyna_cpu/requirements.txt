@@ -1,7 +1,0 @@
-langchain
-langchain-community
-ctransformers
-transformers
-sentence-transformers
-fastapi
-uvicorn
