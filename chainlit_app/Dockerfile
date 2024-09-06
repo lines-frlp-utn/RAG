@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiamos todo el contenido del directorio app al directorio de trabajo
 COPY app app
 
-#COPY .chainlit chainlit.md .chainlit/
+COPY .chainlit .chainlit/
 COPY chainlit.md .
 COPY public public
 
@@ -21,4 +21,4 @@ COPY public public
 EXPOSE 8000
 
 # Comando por defecto para ejecutar la aplicación cuando se inicia el contenedor
-CMD ["python", "-m", "chainlit", "run", "app/main.py"]
+CMD ["python", "-m", "chainlit", "run","--host", "0.0.0.0", "app/main.py"]
