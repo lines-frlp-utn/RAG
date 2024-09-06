@@ -1,16 +1,17 @@
 import chainlit as cl
 from app.chunk_visualization import make_umap
+
+# from app.uploader import get_context_with_filters, get_db, upload_pdf_to_database
+from app.databases import get_context_from_db, post_embeddings
+from app.embeddingGenerator import EmbeddingGenerator, extract_text_from_pdf
 from app.models import embedding_model, get_conversational_answer
 from app.splitter import pdf_to_chunks
-# from app.uploader import get_context_with_filters, get_db, upload_pdf_to_database
-from app.vector_db import vector_db
-from app.databases import post_embeddings, get_context_from_db
 from chainlit.input_widget import Select, Slider, Switch
 from langchain.memory import ConversationBufferMemory
-from app.embeddingGenerator import EmbeddingGenerator, extract_text_from_pdf
 
 embedding_generator = EmbeddingGenerator()
-collection_name = 'prueba_lines'
+collection_name = "prueba_lines"
+
 
 def format_docs(docs):
     return "\n\n".join([d.page_content for d in docs])
@@ -64,7 +65,9 @@ async def start():
     texts = extract_text_from_pdf(file.path)
     embeddings = await cl.make_async(embedding_generator.format_for_database)(texts)
 
-    result=await cl.make_async(post_embeddings)(collection_name=collection_name, dataWithEmbeddings=embeddings)
+    result = await cl.make_async(post_embeddings)(
+        collection_name=collection_name, dataWithEmbeddings=embeddings
+    )
 
     msg.content = f"Archivo `{file.name}` cargado exitosamente, `{result}`"
     await msg.update()
@@ -80,7 +83,7 @@ async def vectordb_results_step(query):
     settings = cl.user_session.get("settings")
     query_embedding = await cl.make_async(embedding_generator.get_embeddings)(query)
     results = await cl.make_async(get_context_from_db)(
-        collection_name=settings["collection"], 
+        collection_name=settings["collection"],
         query=query_embedding,
     )
     cl.context.current_step.output = results
@@ -122,7 +125,7 @@ async def main(message: cl.Message):
     #     )
 
     if message.content.startswith("umap"):
-        a=0
+        a = 0
         # v_db = get_db(settings["collection"]) if settings["collection"] != " " else vector_db
         # query = message.content[5:]
         # query_embedding = embedding_model.embed_query(query)
