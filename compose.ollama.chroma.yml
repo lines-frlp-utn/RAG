@@ -15,7 +15,7 @@ services:
       - DB_PORT=8006
     volumes:
       - rag-volume:/chainlit_app/database
-      - transformer-volume:~/.cache/huggingface/transformers/
+      - transformer-volume:/~/.cache/huggingface/transformers/
 
   ollama:
     image: ollama/ollama
@@ -43,7 +43,7 @@ services:
 
 networks:
   default:
-    name: milvus
+    name: lines-network
 
 volumes:
   ollama:
