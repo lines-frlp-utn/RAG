@@ -3,7 +3,7 @@
     "dockerComposeFile": ["../compose.ollama.chroma.yml", "compose.ollama.chroma.extend.yml"],
 
     "service": "app",
-    "workspaceFolder": "/workspace",
+    "workspaceFolder": "/workspace/chainlit_app",
     "shutdownAction": "stopCompose"
   }
   
