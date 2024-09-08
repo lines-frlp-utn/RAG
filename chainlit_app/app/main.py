@@ -77,7 +77,7 @@ async def start():
         ).send()
 
     file = files[0]
-    msg = cl.Message(content=f"Procesando archivo `{file.name}`...", disable_feedback=True)
+    msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
     await msg.send()
     texts = extract_text_from_pdf(file.path)
     embeddings = await cl.make_async(embedding_generator.format_for_database)(texts)
