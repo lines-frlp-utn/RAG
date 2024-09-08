@@ -51,7 +51,7 @@ async def start():
                 label="model",
                 values=[
                     "llama3.1",
-                    "gemma2",
+                    "gemma2:2b",
                 ],
                 initial_index=0,
             ),
@@ -165,7 +165,9 @@ async def main(message: cl.Message):
     else:
         query = message.content
         context = await vectordb_results_step(query)
-        respuesta = await llm_step(query, context, model=settings["model"], temperature=settings["temperature"])
+        respuesta = await llm_step(
+            query, context, model=settings["model"], temperature=settings["temperature"]
+        )
         msg.content = f"{respuesta}"
 
     await msg.update()  # actualizamos el mensaje con los nuevos datos
