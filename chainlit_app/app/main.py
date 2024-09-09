@@ -1,11 +1,9 @@
 import chainlit as cl
-
-# from app.uploader import get_context_with_filters, get_db, upload_pdf_to_database
 from app.databases import get_context_from_db, post_embeddings
 from app.embeddingGenerator import EmbeddingGenerator, extract_text_from_pdf
-from app.models import embedding_model, get_conversational_answer
+from app.models import get_conversational_answer
 from app.splitter import pdf_to_chunks
-from chainlit.input_widget import Select, Slider, Switch
+from chainlit.input_widget import Select, Slider
 from langchain.memory import ConversationBufferMemory
 
 embedding_generator = EmbeddingGenerator()
