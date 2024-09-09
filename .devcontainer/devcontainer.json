@@ -4,6 +4,16 @@
 
     "service": "app",
     "workspaceFolder": "/workspace/chainlit_app",
-    "shutdownAction": "stopCompose"
-  }
-  
+    "shutdownAction": "stopCompose",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.debugpy",
+                "ms-python.python",
+                "GitHub.copilot",
+                "charliermarsh.ruff",
+                "vivaxy.vscode-conventional-commits"
+            ]
+        }
+    }
+}
