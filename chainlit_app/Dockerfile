@@ -2,7 +2,7 @@
 FROM python:3.11.9
 
 # Establecemos el directorio de trabajo dentro del contenedor
-WORKDIR /app
+WORKDIR /code
 
 # Copiamos el archivo requirements.txt al directorio de trabajo
 COPY requirements.txt .
@@ -10,7 +10,7 @@ COPY requirements.txt .
 # Instalamos las dependencias especificadas en requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiamos todo el contenido del directorio app al directorio de trabajo
+# Copiamos todo el contenido del directorio app al directorio /code/app
 COPY app app
 
 COPY .chainlit .chainlit/

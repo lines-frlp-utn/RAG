@@ -1,3 +1,6 @@
+include:
+  - compose.aim_tracking.yml
+
 services:
 
   app:
@@ -7,14 +10,18 @@ services:
     ports:
       - 8000:8000
     env_file:
-      - chainlit_app/.env
+      - .env
     environment:
       - MODEL_URL=${MODEL_URL:-http://ollama}
       - MODEL_PORT=${MODEL_PORT:-11434}
       - DB_URL=http://db-chroma
       - DB_PORT=8006
+      - LLAMA_PARSE_API_KEY=${LLAMA_PARSE_API_KEY:-""}
     volumes:
       - rag-volume:/chainlit_app/database
+      - transformer-volume:/~/.cache/huggingface/transformers/
+    depends_on:
+      - server # Aim server
 
   ollama:
     image: ollama/ollama
@@ -42,11 +49,13 @@ services:
 
 networks:
   default:
-    name: milvus
+    name: lines-network
 
 volumes:
   ollama:
     name: ollama
   rag-volume:
+    driver: local
+  transformer-volume:
     driver: local
 

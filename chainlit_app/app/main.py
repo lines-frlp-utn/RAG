@@ -1,12 +1,9 @@
 import chainlit as cl
-from app.chunk_visualization import make_umap
-
-# from app.uploader import get_context_with_filters, get_db, upload_pdf_to_database
 from app.databases import get_context_from_db, post_embeddings
 from app.embeddingGenerator import EmbeddingGenerator, extract_text_from_pdf
-from app.models import embedding_model, get_conversational_answer
+from app.models import get_conversational_answer
 from app.splitter import pdf_to_chunks
-from chainlit.input_widget import Select, Slider, Switch
+from chainlit.input_widget import Select, Slider
 from langchain.memory import ConversationBufferMemory
 
 embedding_generator = EmbeddingGenerator()
@@ -46,6 +43,23 @@ async def start():
                 values=["-"],
                 initial_index=0,
             ),
+            Select(
+                id="model",
+                label="model",
+                values=[
+                    "llama3.1",
+                    "gemma2:2b",
+                ],
+                initial_index=0,
+            ),
+            Slider(
+                id="temperature",
+                label="temperature",
+                min=0,
+                max=1,
+                step=0.1,
+                initial=0,
+            ),
         ]
     ).send()
     await update_settings(settings)
@@ -60,7 +74,7 @@ async def start():
         ).send()
 
     file = files[0]
-    msg = cl.Message(content=f"Procesando archivo `{file.name}`...", disable_feedback=True)
+    msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
     await msg.send()
     texts = extract_text_from_pdf(file.path)
     embeddings = await cl.make_async(embedding_generator.format_for_database)(texts)
@@ -102,8 +116,8 @@ async def context_step(results):
 
 
 @cl.step
-async def llm_step(query, context):
-    respuesta = await cl.make_async(get_conversational_answer)(query, context)
+async def llm_step(query, context, **kwargs):
+    respuesta = await cl.make_async(get_conversational_answer)(query, context, **kwargs)
     return respuesta
 
 
@@ -124,32 +138,12 @@ async def main(message: cl.Message):
     #         collection_name="prueba_lines",
     #     )
 
-    if message.content.startswith("umap"):
-        a = 0
-        # v_db = get_db(settings["collection"]) if settings["collection"] != " " else vector_db
-        # query = message.content[5:]
-        # query_embedding = embedding_model.embed_query(query)
-        # results = (
-        #     get_context_with_filters(
-        #         settings["collection"], settings["theme"], settings["subtheme"], query
-        #     )
-        #     if settings["collection"] != " "
-        #     else v_db.similarity_search(query)
-        # )
-        # retrieved_embeddings = []
-        # for doc in results:
-        #     retrieved_embeddings.append(embedding_model.embed_query(doc.page_content))
-        # umap_path = await cl.make_async(
-        #     make_umap
-        # )(
-        #     v_db, retrieved_embeddings, query_embedding, query, session_number
-        # )  # TODO: Arreglar porque ya no tenemos vector_db, tenemos retriever, capaz en uploader habria que hacer otra funcion que traiga la coleccion
-        # msg.elements = [cl.Image(path=umap_path, name="umap", display="inline")]
-    else:
-        query = message.content
-        context = await vectordb_results_step(query)
-        respuesta = await llm_step(query, context)
-        msg.content = f"{respuesta}"
+    query = message.content
+    context = await vectordb_results_step(query)
+    respuesta = await llm_step(
+        query, context, model=settings["model"], temperature=settings["temperature"]
+    )
+    msg.content = f"{respuesta}"
 
     await msg.update()  # actualizamos el mensaje con los nuevos datos
 

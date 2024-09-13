@@ -1,3 +1,6 @@
+include:
+  - compose.aim_tracking.yml
+
 services:
 
   app:
@@ -15,6 +18,9 @@ services:
       - DB_PORT=8006
     volumes:
       - rag-volume:/chainlit_app/database
+      - transformer-volume:/~/.cache/huggingface/transformers/
+    depends_on:
+      - server # Aim server
 
   ollama:
     image: ollama/ollama
@@ -101,12 +107,15 @@ services:
       - "etcd"
       - "minio"
 
+  
 volumes:
   ollama:
     name: ollama
   rag-volume:
     driver: local
+  transformer-volume:
+    driver: local
 
 networks:
   default:
-    name: milvus
+    name: lines-network
