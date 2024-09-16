@@ -62,6 +62,7 @@ def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
 
 
 def get_context_with_filters(collection_name, query):
+    client.load_collection(collection_name=collection_name)
     respuesta = client.search(
         collection_name=collection_name,  # target collection
         data=query,  # query vectors
@@ -87,4 +88,5 @@ def upload(data: EmbeddingData):
 def get_context(data: QueryData):
     query = data.query
     collection_name = data.collection_name
+    print("collection_name: " + collection_name)
     return get_context_with_filters(collection_name, query)
