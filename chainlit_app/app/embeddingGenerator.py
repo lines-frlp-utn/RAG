@@ -1,34 +1,36 @@
 import hashlib
-
 import pymupdf  # PyMuPDF
-import torch
-from transformers import AutoModel, AutoTokenizer
+import ollama
+import numpy as np
 
 # model_distibert = "distilbert-base-multilingual-cased"
-model_bertMini = "sentence-transformers/all-MiniLM-L6-v2"
+
+model_ollama = "mxbai-embed-large"
 
 
 class EmbeddingGenerator:
-    def __init__(self, model_name=model_bertMini):
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModel.from_pretrained(model_name)
+    def __init__(self, model_name=model_ollama):
+        self.model_name = model_name
 
     def generate_id(self, text):
         return int(hashlib.md5(text.encode()).hexdigest(), 16) % (10**8)
 
     def get_embeddings(self, texts):
-        inputs = self.tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
-        with torch.no_grad():
-            outputs = self.model(**inputs)
-        last_hidden_state = outputs.last_hidden_state
-        embeddings = last_hidden_state.mean(dim=1)
+        embeddings = []
+        for text in texts:
+            response = ollama.embeddings(
+                model=self.model_name,
+                prompt=text
+            )
+            embeddings.append(response["embedding"])
         return embeddings
 
     def format_for_database(self, texts):
         embeddings = self.get_embeddings(texts)
         result = []
         for text, emb in zip(texts, embeddings):
-            emb_list = emb.tolist()
+            emb_array = np.array(emb)  
+            emb_list = emb_array.tolist()
             result.append({"id": self.generate_id(text), "text": text, "vector": emb_list})
         return result
 
@@ -44,14 +46,13 @@ def extract_text_from_pdf(pdf_path):
 
 
 if __name__ == "__main__":
-    pdf_path = "../tests/pdfs_prueba/algoritmos.pdf"  # Reemplazar con la ruta del archivo PDF
+    pdf_path = "../tests/pdfs_prueba/algoritmos.pdf"  
     texts = extract_text_from_pdf(pdf_path)
 
     embedding_generator = EmbeddingGenerator()
 
-    # Obtener la lista de diccionarios en el formato [{"text": <chunk>, "embeddings": <embedding>}]
     embedding_list = embedding_generator.format_for_database(texts)
 
     for item in embedding_list:
         print(f"Text: {item['text']}")
-        # print(f"Embedding: {item['embeddings'][:5]}...")  # Imprime los primeros 5 valores de los embeddings
+        # print(f"Embedding: {item['vector'][:5]}...")  # Imprime los primeros 5 valores de los embeddings
