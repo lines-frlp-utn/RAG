@@ -1,6 +1,6 @@
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
+
 
 def split_text_with_langchain(texts, chunk_size=1000, chunk_overlap=100):
     """
