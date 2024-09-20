@@ -106,7 +106,7 @@ async def vectordb_results_step(query):
     settings = cl.user_session.get("settings")
     query_embedding = await cl.make_async(embedding_generator.get_embeddings)([query])
     results = await cl.make_async(get_context_from_db)(
-        collection_name=collection_name,
+        collection_name=settings["collection"],
         query=query_embedding,
     )
     cl.context.current_step.output = results

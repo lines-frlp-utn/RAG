@@ -17,9 +17,10 @@ class EmbeddingGenerator:
         inputs = self.tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
         with torch.no_grad():
             outputs = self.model(**inputs)
-        last_hidden_state = outputs.last_hidden_state
-        embeddings = last_hidden_state.mean(dim=1)
+        # Usar solo el embedding del primer token [CLS]
+        embeddings = outputs.last_hidden_state[:, 0, :]
         return embeddings
+
 
     def format_for_database(self, texts):
         embeddings = self.get_embeddings(texts)

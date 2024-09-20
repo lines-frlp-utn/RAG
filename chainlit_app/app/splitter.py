@@ -23,18 +23,7 @@ def split_text_with_langchain(texts, chunk_size=1000, chunk_overlap=200):
     # Usar comprensión de listas para dividir texto
     return [chunk for text in texts for chunk in text_splitter.split_text(text)]
 
-def refine_split_by_similarity(chunks, embeddings, threshold=0.85):
-    """
-    Refina la separación de los chunks basado en la similitud coseno entre los embeddings.
-    
-    Args:
-        chunks (list): Lista de fragmentos de texto.
-        embeddings (array): Matriz de embeddings.
-        threshold (float): Umbral de similitud para combinar fragmentos.
-
-    Returns:
-        list: Lista de fragmentos refinados.
-    """
+def refine_split_by_similarity(chunks, embeddings, threshold=0.7):
     similarities = cosine_similarity(embeddings)
     used = np.zeros(len(chunks), dtype=bool)
     refined_chunks = []
@@ -44,11 +33,17 @@ def refine_split_by_similarity(chunks, embeddings, threshold=0.85):
             temp_chunk = [chunks[i]]
             used[i] = True
             
-            # Usar boolean indexing para encontrar índices que cumplan la condición
+            # Encuentra índices similares que no han sido utilizados
             similar_indices = np.where((similarities[i] >= threshold) & ~used)[0]
-            temp_chunk.extend(chunks[j] for j in similar_indices)
-            used[similar_indices] = True
             
+            # Combina los chunks similares
+            for j in similar_indices:
+                if not used[j]:  # Solo combina si aún no se ha utilizado
+                    temp_chunk.append(chunks[j])
+                    used[j] = True
+            
+            # Agrega el nuevo chunk combinado
             refined_chunks.append(" ".join(temp_chunk))
     
     return refined_chunks
+
