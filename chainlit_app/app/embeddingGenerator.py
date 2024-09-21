@@ -1,15 +1,18 @@
 import hashlib
-import pymupdf  # PyMuPDF
-import ollama
+import os
+import pymupdf  
+import requests
 import numpy as np
+from dotenv import load_dotenv
 
-# model_distibert = "distilbert-base-multilingual-cased"
+load_dotenv()
 
-model_ollama = "mxbai-embed-large"
-
+#http://<IP_DEL_SERVIDOR>:<PUERTO>/api/embeddings
+remote_service_url = os.getenv("REMOTE_SERVICE_URL")
 
 class EmbeddingGenerator:
-    def __init__(self, model_name=model_ollama):
+    def __init__(self, service_url=remote_service_url, model_name="mxbai-embed-large"):
+        self.service_url = service_url
         self.model_name = model_name
 
     def generate_id(self, text):
@@ -18,19 +21,26 @@ class EmbeddingGenerator:
     def get_embeddings(self, texts):
         embeddings = []
         for text in texts:
-            response = ollama.embeddings(
-                model=self.model_name,
-                prompt=text
-            )
-            embeddings.append(response["embedding"])
+            try:
+                response = requests.post(self.service_url, json={
+                    "model": self.model_name,
+                    "prompt": f"Represent this sentence for searching relevant passages: {text}"
+                })
+                response.raise_for_status() 
+                response_data = response.json()
+                embeddings.append(response_data["embedding"])
+            except requests.exceptions.RequestException as e:
+                print(f"Error en la solicitud: {e}")
+            except ValueError as e:
+                print(f"Error al decodificar JSON: {e}")
+                print(f"Respuesta del servidor: {response.text}")
         return embeddings
 
     def format_for_database(self, texts):
         embeddings = self.get_embeddings(texts)
         result = []
         for text, emb in zip(texts, embeddings):
-            emb_array = np.array(emb)  
-            emb_list = emb_array.tolist()
+            emb_list = np.array(emb).tolist() 
             result.append({"id": self.generate_id(text), "text": text, "vector": emb_list})
         return result
 
@@ -44,15 +54,3 @@ def extract_text_from_pdf(pdf_path):
         texts.append(text)
     return texts
 
-
-if __name__ == "__main__":
-    pdf_path = "../tests/pdfs_prueba/algoritmos.pdf"  
-    texts = extract_text_from_pdf(pdf_path)
-
-    embedding_generator = EmbeddingGenerator()
-
-    embedding_list = embedding_generator.format_for_database(texts)
-
-    for item in embedding_list:
-        print(f"Text: {item['text']}")
-        # print(f"Embedding: {item['vector'][:5]}...")  # Imprime los primeros 5 valores de los embeddings
