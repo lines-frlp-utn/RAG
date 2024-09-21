@@ -1,6 +1,20 @@
 include:
   - compose.aim_tracking.yml
 
+x-ollama: &ollama-base
+  image: ollama/ollama
+  ports:
+    - "11434:11434"
+  volumes:
+    - ollama:/root/.ollama
+  environment:
+    - OLLAMA_DEBUG=true
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - capabilities: [gpu]
+
 services:
 
   app:
@@ -22,23 +36,17 @@ services:
     depends_on:
       - server # Aim server
 
-  ollama:
-    image: ollama/ollama
-    container_name: ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama:/root/.ollama
-    environment:
-      - OLLAMA_DEBUG=true
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
+  ollama-init:
+    << : *ollama-base
+    restart: no
     entrypoint: bash -c "ollama serve & sleep 10 ; ollama pull llama3.1; ollama pull gamma2:2b; ollama pull mxbai-embed-large"
-    # command: "ollama run llama3.1"
 
+  ollama:
+    << : *ollama-base
+    container_name: ollama
+    depends_on:
+      ollama-init:
+        condition: service_completed_successfully
 
   db-milvus:
     image: milvus
