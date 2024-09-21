@@ -37,6 +37,7 @@ services:
         reservations:
           devices:
             - capabilities: [gpu]
+    entrypoint: bash -c "ollama serve & sleep 10 ; ollama pull llama3.1; ollama pull gamma2:2b; ollama pull mxbai-embed-large"
     # command: "ollama run llama3.1"
 
   db-chroma:
