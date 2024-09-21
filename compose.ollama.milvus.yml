@@ -1,19 +1,5 @@
 include:
-  - compose.aim_tracking.yml
-
-x-ollama: &ollama-base
-  image: ollama/ollama
-  ports:
-    - "11434:11434"
-  volumes:
-    - ollama:/root/.ollama
-  environment:
-    - OLLAMA_DEBUG=true
-  deploy:
-    resources:
-      reservations:
-        devices:
-          - capabilities: [gpu]
+  - compose.base.yml
 
 services:
 
@@ -24,29 +10,18 @@ services:
     ports:
       - 8000:8000
     env_file:
-      - chainlit_app/.env
+      - .env
     environment:
       - MODEL_URL=${MODEL_URL:-http://ollama}
       - MODEL_PORT=${MODEL_PORT:-11434}
       - DB_URL=http://db-milvus
       - DB_PORT=8006
+      - LLAMA_PARSE_API_KEY=${LLAMA_PARSE_API_KEY:-""}
     volumes:
       - rag-volume:/chainlit_app/database
       - transformer-volume:/~/.cache/huggingface/transformers/
     depends_on:
-      - server # Aim server
-
-  ollama-init:
-    << : *ollama-base
-    restart: no
-    entrypoint: bash -c "ollama serve & sleep 10 ; ollama pull llama3.1; ollama pull gemma2:2b"
-
-  ollama:
-    << : *ollama-base
-    container_name: ollama
-    depends_on:
-      ollama-init:
-        condition: service_completed_successfully
+      - aim-server
 
   db-milvus:
     image: milvus
@@ -115,16 +90,3 @@ services:
     depends_on:
       - "etcd"
       - "minio"
-
-  
-volumes:
-  ollama:
-    name: ollama
-  rag-volume:
-    driver: local
-  transformer-volume:
-    driver: local
-
-networks:
-  default:
-    name: lines-network
