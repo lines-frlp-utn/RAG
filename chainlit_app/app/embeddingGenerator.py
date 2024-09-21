@@ -1,14 +1,17 @@
 import hashlib
 import os
-import pymupdf  
-import requests
+
 import numpy as np
+import pymupdf
+import requests
+from app.config import conf
 from dotenv import load_dotenv
 
 load_dotenv()
 
-#http://<IP_DEL_SERVIDOR>:<PUERTO>/api/embeddings
-remote_service_url = os.getenv("REMOTE_SERVICE_URL")
+# http://<IP_DEL_SERVIDOR>:<PUERTO>/api/embeddings
+remote_service_url = f"{conf.MODEL_URL}:{conf.MODEL_PORT}/api/embeddings"
+
 
 class EmbeddingGenerator:
     def __init__(self, service_url=remote_service_url, model_name="mxbai-embed-large"):
@@ -22,11 +25,14 @@ class EmbeddingGenerator:
         embeddings = []
         for text in texts:
             try:
-                response = requests.post(self.service_url, json={
-                    "model": self.model_name,
-                    "prompt": f"Represent this sentence for searching relevant passages: {text}"
-                })
-                response.raise_for_status() 
+                response = requests.post(
+                    self.service_url,
+                    json={
+                        "model": self.model_name,
+                        "prompt": f"Represent this sentence for searching relevant passages: {text}",
+                    },
+                )
+                response.raise_for_status()
                 response_data = response.json()
                 embeddings.append(response_data["embedding"])
             except requests.exceptions.RequestException as e:
@@ -40,7 +46,7 @@ class EmbeddingGenerator:
         embeddings = self.get_embeddings(texts)
         result = []
         for text, emb in zip(texts, embeddings):
-            emb_list = np.array(emb).tolist() 
+            emb_list = np.array(emb).tolist()
             result.append({"id": self.generate_id(text), "text": text, "vector": emb_list})
         return result
 
@@ -53,4 +59,3 @@ def extract_text_from_pdf(pdf_path):
         text = page.get_text()
         texts.append(text)
     return texts
-
