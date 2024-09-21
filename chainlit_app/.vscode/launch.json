@@ -11,7 +11,7 @@
             "module": "chainlit",
             // "cwd": "${workspaceFolder}/chainlit_app",
             "args": [
-                "run","--host", "0.0.0.0", "app/main.py"
+                "run","--host", "0.0.0.0", "--port", "8005", "app/main.py"
             ],
         }
     ]
