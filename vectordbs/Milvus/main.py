@@ -23,7 +23,7 @@ def create_schema():
     )
     
     schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True)
-    schema.add_field(field_name="vector", datatype=DataType.FLOAT_VECTOR, dim=384)
+    schema.add_field(field_name="vector", datatype=DataType.FLOAT_VECTOR, dim=1024)
     schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=40000) # cambiar el max_length cuando tengamos el recursive text splitter para los chunks
     
     return schema
