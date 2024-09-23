@@ -17,7 +17,7 @@ def split_text_with_langchain(texts, chunk_size=1000, chunk_overlap=200):
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size, 
         chunk_overlap=chunk_overlap,
-        separators=[".", "!", "?", "\n\n", "\n", " ", "", "\t"]
+        separators=[".", "!", "?", "\n\n", "\n", "\t"]
     )
     
     # Usar comprensión de listas para dividir texto
