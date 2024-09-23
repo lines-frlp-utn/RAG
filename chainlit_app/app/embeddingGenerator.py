@@ -1,31 +1,48 @@
 import hashlib
-import torch
-from transformers import AutoModel, AutoTokenizer
+import numpy as np
+import requests
+from app.config import conf
+from dotenv import load_dotenv
 
-model_bertMini = "sentence-transformers/all-MiniLM-L6-v2"
+load_dotenv()
+
+# http://<IP_DEL_SERVIDOR>:<PUERTO>/api/embeddings
+remote_service_url = f"{conf.MODEL_URL}:{conf.MODEL_PORT}/api/embeddings"
 
 
 class EmbeddingGenerator:
-    def __init__(self, model_name=model_bertMini):
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModel.from_pretrained(model_name)
+    def __init__(self, service_url=remote_service_url, model_name="mxbai-embed-large"):
+        self.service_url = service_url
+        self.model_name = model_name
 
     def generate_id(self, text):
         return int(hashlib.md5(text.encode()).hexdigest(), 16) % (10**8)
 
     def get_embeddings(self, texts):
-        inputs = self.tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
-        with torch.no_grad():
-            outputs = self.model(**inputs)
-        # Usar solo el embedding del primer token [CLS]
-        embeddings = outputs.last_hidden_state[:, 0, :]
+        embeddings = []
+        for text in texts:
+            try:
+                response = requests.post(
+                    self.service_url,
+                    json={
+                        "model": self.model_name,
+                        "prompt": f"Represent this sentence for searching relevant passages: {text}",
+                    },
+                )
+                response.raise_for_status()
+                response_data = response.json()
+                embeddings.append(response_data["embedding"])
+            except requests.exceptions.RequestException as e:
+                print(f"Error en la solicitud: {e}")
+            except ValueError as e:
+                print(f"Error al decodificar JSON: {e}")
+                print(f"Respuesta del servidor: {response.text}")
         return embeddings
-
 
     def format_for_database(self, texts):
         embeddings = self.get_embeddings(texts)
         result = []
         for text, emb in zip(texts, embeddings):
-            emb_list = emb.tolist()
+            emb_list = np.array(emb).tolist()
             result.append({"id": self.generate_id(text), "text": text, "vector": emb_list})
         return result
