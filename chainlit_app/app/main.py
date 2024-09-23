@@ -84,10 +84,6 @@ async def start():
     
     # Generar los embeddings de los chunks
     embeddings = await cl.make_async(embedding_generator.get_embeddings)(chunks)
-    
-    # Imprimir los embeddings generados
-    for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
-        cl.Message(content=f"Chunk {i}: {chunk}\nEmbedding: {embedding.tolist()[:5]}...").send()
 
     # Refinar los chunks según la similitud coseno
     refined_chunks = refine_split_by_similarity(chunks, embeddings)
