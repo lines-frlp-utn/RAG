@@ -40,7 +40,7 @@ services:
   ollama-init:
     << : *ollama-base
     restart: no
-    entrypoint: bash -c "ollama serve & sleep 10 ; ollama pull llama3.1; ollama pull gemma2:2b ; ollama pull mxbai-embed-large"
+    entrypoint: bash -c "ollama serve & sleep 10 ; ollama pull llama3.1; ollama pull gamma2:2b; ollama pull mxbai-embed-large"
 
   ollama:
     << : *ollama-base

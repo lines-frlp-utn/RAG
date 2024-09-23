@@ -121,7 +121,7 @@ async def vectordb_results_step(query):
 async def context_step(results):
     context = ""
     for doc in results:
-        context += f" {doc}"
+        context = f"{context} {doc[0]}"
 
     cl.context.current_step.output = context
     return context
