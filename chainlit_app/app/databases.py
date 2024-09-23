@@ -3,8 +3,7 @@ from app.config import conf
 
 
 def post_embeddings(dataWithEmbeddings, collection_name):
-    print(dataWithEmbeddings)
-    print("name: " + collection_name)
+    print("collection name: " + collection_name)
     response = requests.post(
         f"{conf.DB_URL}:{conf.DB_PORT}/upload-embeddings",
         json={"dataWithEmbeddings": dataWithEmbeddings, "collection_name": collection_name},
