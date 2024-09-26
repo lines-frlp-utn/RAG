@@ -1,8 +1,5 @@
-
 x-ollama: &ollama-base
   image: ollama/ollama
-  ports:
-    - "11434:11434"
   volumes:
     - ollama:/root/.ollama
   environment:
@@ -27,6 +24,8 @@ services:
   ollama:
     << : *ollama-base
     container_name: ollama
+    ports:
+    - "11434:11434"
     depends_on:
       ollama-init:
         condition: service_completed_successfully
