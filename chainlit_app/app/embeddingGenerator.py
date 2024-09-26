@@ -1,13 +1,9 @@
 import hashlib
-import os
 
 import numpy as np
 import pymupdf
 import requests
 from app.config import conf
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # http://<IP_DEL_SERVIDOR>:<PUERTO>/api/embeddings
 remote_service_url = f"{conf.MODEL_URL}:{conf.MODEL_PORT}/api/embeddings"
@@ -41,7 +37,6 @@ class EmbeddingGenerator:
                 print(f"Error al decodificar JSON: {e}")
                 print(f"Respuesta del servidor: {response.text}")
         return embeddings
-
 
     def format_for_database(self, texts):
         embeddings = self.get_embeddings(texts)
