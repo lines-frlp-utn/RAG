@@ -7,11 +7,14 @@ x-ollama: &ollama-base
     - ollama:/root/.ollama
   environment:
     - OLLAMA_DEBUG=true
+    - CUDA_VISIBLE_DEVICES=0 
   deploy:
     resources:
       reservations:
         devices:
-          - capabilities: [gpu]
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
 
 
 services:
