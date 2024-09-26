@@ -10,7 +10,7 @@ services:
     ports:
       - 8005:8005
     env_file:
-      - .env
+      - ./chainlit_app/.env
     environment:
       - MODEL_URL=${MODEL_URL:-http://ollama}
       - MODEL_PORT=${MODEL_PORT:-11434}
