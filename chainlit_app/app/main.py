@@ -48,6 +48,7 @@ async def start():
             ),
         ]
     ).send()
+    
     await update_settings(settings)
 
 
@@ -91,23 +92,25 @@ async def llm_step(query, context, **kwargs):
 async def main(message: cl.Message):
     session_number = cl.user_session.get("session_number")
     settings = cl.user_session.get("settings")
-
+    
     if message.elements:
         file = message.elements[0]
         msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
         await msg.send()
-        texts = extract_text_from_pdf(file.path)
-        embeddings = await cl.make_async(embedding_generator.format_for_database)(texts)
-
-        result = await cl.make_async(post_embeddings)(
-            collection_name=collection_name, dataWithEmbeddings=embeddings
-        )
-
-        msg.content = f"Archivo `{file.name}` cargado exitosamente, `{result}`"
+        try:
+            texts = extract_text_from_pdf(file.path)
+            embeddings = await cl.make_async(embedding_generator.format_for_database)(texts)
+            
+            result = await cl.make_async(post_embeddings)(
+                collection_name=collection_name, dataWithEmbeddings=embeddings
+            )
+            msg.content = f"Archivo `{file.name}` cargado exitosamente, `{result}`"
+        except Exception as e:
+            msg.content = f"Error procesando el archivo `{file.name}`: {str(e)}"
         await msg.update()
-
-    msg = cl.Message(content="")  # Muestra un loader mientras carga el mensaje
-    await msg.send()
+    else:
+        msg = cl.Message(content="")  # Solo muestra el loader si no se envió otro mensaje
+        await msg.send()
 
     query = message.content
     context = await vectordb_results_step(query)

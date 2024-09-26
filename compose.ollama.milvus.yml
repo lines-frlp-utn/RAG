@@ -10,7 +10,7 @@ services:
     ports:
       - 8005:8005
     env_file:
-      - ./chainlit_app/.env
+      - .env
     environment:
       - MODEL_URL=${MODEL_URL:-http://ollama}
       - MODEL_PORT=${MODEL_PORT:-11434}
@@ -30,6 +30,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8006:8006
+    depends_on:
+      standalone:
+        condition: service_healthy
 
   etcd:
     container_name: milvus-etcd

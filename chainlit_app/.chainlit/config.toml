@@ -30,6 +30,7 @@ latex = false
 
 # Authorize users to upload files with messages
 multi_modal.enabled  = true
+spontaneous_file_upload.enabled=true
 
 # Allows user to use speech to text
 [features.speech_to_text]
