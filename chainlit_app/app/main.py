@@ -22,28 +22,6 @@ async def start():
     settings = await cl.ChatSettings(
         [
             Select(
-                id="collection",
-                label="collection",
-                values=[
-                    "prueba_lines",
-                ],
-                initial_index=0,
-            ),
-            Select(
-                id="theme",
-                label="theme",
-                values=[
-                    "-",
-                ],
-                initial_index=0,
-            ),
-            Select(
-                id="subtheme",
-                label="subtheme",
-                values=["-"],
-                initial_index=0,
-            ),
-            Select(
                 id="model",
                 label="model",
                 values=[
@@ -60,31 +38,17 @@ async def start():
                 step=0.1,
                 initial=0,
             ),
+            Slider(
+                id="frequency_penalty",
+                label="frequency penalty",
+                min=0,
+                max=1,
+                step=0.1,
+                initial=0,
+            ),
         ]
     ).send()
     await update_settings(settings)
-
-    files = None
-    while files == None:
-        files = await cl.AskFileMessage(
-            content="Por favor suba un archivo PDF para continuar!",
-            accept=["application/pdf"],
-            max_size_mb=20,
-            timeout=180,
-        ).send()
-
-    file = files[0]
-    msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
-    await msg.send()
-    texts = extract_text_from_pdf(file.path)
-    embeddings = await cl.make_async(embedding_generator.format_for_database)(texts)
-
-    result = await cl.make_async(post_embeddings)(
-        collection_name=collection_name, dataWithEmbeddings=embeddings
-    )
-
-    msg.content = f"Archivo `{file.name}` cargado exitosamente, `{result}`"
-    await msg.update()
 
 
 @cl.on_settings_update
@@ -97,7 +61,7 @@ async def vectordb_results_step(query):
     settings = cl.user_session.get("settings")
     query_embedding = await cl.make_async(embedding_generator.get_embeddings)(query)
     results = await cl.make_async(get_context_from_db)(
-        collection_name=settings["collection"],
+        collection_name=collection_name,
         query=query_embedding,
     )
     cl.context.current_step.output = results
@@ -117,7 +81,9 @@ async def context_step(results):
 
 @cl.step
 async def llm_step(query, context, **kwargs):
-    respuesta = await cl.make_async(get_conversational_answer)(query, context, **kwargs)
+    chat_context = cl.chat_context.to_openai()
+    print(f"Chat context: {chat_context}")
+    respuesta = await cl.make_async(get_conversational_answer)(context, chat_context, **kwargs)
     return respuesta
 
 
@@ -126,22 +92,33 @@ async def main(message: cl.Message):
     session_number = cl.user_session.get("session_number")
     settings = cl.user_session.get("settings")
 
+    if message.elements:
+        file = message.elements[0]
+        msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
+        await msg.send()
+        texts = extract_text_from_pdf(file.path)
+        embeddings = await cl.make_async(embedding_generator.format_for_database)(texts)
+
+        result = await cl.make_async(post_embeddings)(
+            collection_name=collection_name, dataWithEmbeddings=embeddings
+        )
+
+        msg.content = f"Archivo `{file.name}` cargado exitosamente, `{result}`"
+        await msg.update()
+
     msg = cl.Message(content="")  # Muestra un loader mientras carga el mensaje
     await msg.send()
 
-    # if message.elements:
-    #     file = pdf_to_chunks(message.elements[0])
-    #     upload_pdf_to_database(
-    #         text_file=file.path,
-    #         theme="-",
-    #         subtheme="-",
-    #         collection_name="prueba_lines",
-    #     )
-
     query = message.content
     context = await vectordb_results_step(query)
+    kwargs = {
+        "model": settings["model"],
+        "temperature": settings["temperature"],
+        "frequency_penalty": settings["frequency_penalty"]
+    }
     respuesta = await llm_step(
-        query, context, model=settings["model"], temperature=settings["temperature"]
+        query=query, context=context, 
+        **kwargs
     )
     msg.content = f"{respuesta}"
 
