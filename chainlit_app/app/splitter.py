@@ -42,6 +42,11 @@ def refine_split_by_similarity(chunks, embeddings, threshold=0.7):
     similarities = cosine_similarity(embeddings)
     used = np.zeros(len(chunks), dtype=bool)
     refined_chunks = []
+    
+    precomputed_similarities = {}
+    #llenar el diccionario con las similitudes. indice : similitud
+    for i in range(len(chunks)):
+        precomputed_similarities[i] = np.where(similarities[i] >= threshold)[0]
 
     for i in range(len(chunks)):
         if not used[i]:
@@ -49,7 +54,7 @@ def refine_split_by_similarity(chunks, embeddings, threshold=0.7):
             used[i] = True
             
             # Encuentra índices similares que no han sido utilizados
-            similar_indices = np.where((similarities[i] >= threshold) & ~used)[0]
+            similar_indices = precomputed_similarities[i][~used[precomputed_similarities[i]]]
             
             # Combina los chunks similares
             for j in similar_indices:
@@ -58,7 +63,7 @@ def refine_split_by_similarity(chunks, embeddings, threshold=0.7):
                     used[j] = True
             
             # Agrega el nuevo chunk combinado
-            refined_chunks.append(" ".join(temp_chunk))
+            refined_chunks.append(" \n\n".join(temp_chunk))
     
     return refined_chunks
 
