@@ -29,3 +29,5 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8006:8006
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/chroma:/code/database/
