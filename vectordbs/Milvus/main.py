@@ -38,7 +38,7 @@ def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
     client.create_collection(
         collection_name=collection_name,
         schema=schema,
-        dimension=384,  # The vectors we will use in this demo has 768 dimensions
+        dimension=1024,  # The vectors we will use in this demo has 768 dimensions
     )
     index_params.add_index(
         field_name="vector",

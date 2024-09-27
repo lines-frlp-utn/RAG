@@ -71,7 +71,7 @@ async def vectordb_results_step(query):
 async def context_step(results):
     context = ""
     for doc in results:
-        context = f"{context} {doc[0]}"
+        context = f"{context} \n {doc}"
 
     cl.context.current_step.output = context
     return context
@@ -80,7 +80,7 @@ async def context_step(results):
 async def llm_step(query, context, **kwargs):
     chat_context = cl.chat_context.to_openai()
     print(f"Chat context: {chat_context}")
-    respuesta = await cl.make_async(get_conversational_answer)(context, chat_context, **kwargs)
+    respuesta = await cl.make_async(get_conversational_answer)(query, context, chat_context, **kwargs)
     return respuesta
 
 @cl.on_message
@@ -90,9 +90,8 @@ async def main(message: cl.Message):
     
     if message.elements:
         file = message.elements[0]
-        msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
-        await msg.send()
-
+        # msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
+        # await msg.send()
         try:
             # Extraer el texto del PDF
             texts = extract_text_from_pdf(file.path)
@@ -111,15 +110,14 @@ async def main(message: cl.Message):
             result = await cl.make_async(post_embeddings)(
                 collection_name=collection_name, dataWithEmbeddings=embeddings_data
             )
-
-            msg.content = f"Archivo `{file.name}` cargado exitosamente, `{result}`"
+            print(f"Archivo `{file.name}` cargado exitosamente, `{result}`")
+            # msg.content = f"Archivo `{file.name}` cargado exitosamente, `{result}`"
         except Exception as e:
-            msg.content = f"Error procesando el archivo `{file.name}`: {str(e)}"
+            # msg.content = f"Error procesando el archivo `{file.name}`: {str(e)}"
+            print(f"Error procesando el archivo `{file.name}`: {str(e)}")
 
-        await msg.update()
-    else:
-        msg = cl.Message(content="")  # Solo muestra el loader si no se envió otro mensaje
-        await msg.send()
+    msg = cl.Message(content="")  # Solo muestra el loader si no se envió otro mensaje
+    await msg.send()
 
     query = message.content
     context = await vectordb_results_step(query)
