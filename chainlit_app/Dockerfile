@@ -1,9 +1,9 @@
-# Install uv
 FROM python:3.12
 
 # Establecemos el directorio de trabajo dentro del contenedor
 WORKDIR /code
 
+# Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 # Change the working directory to the `app` directory
@@ -15,8 +15,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-project
 
-# Copy the project into the image
-# Copiamos todo el contenido del directorio app al directorio /code/app
+# Copiamos todo el contenido del proyecto directorio app al directorio /code/app
 COPY app app
 
 COPY .chainlit .chainlit/
