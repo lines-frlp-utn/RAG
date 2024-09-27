@@ -16,22 +16,31 @@ llm = ChatOpenAI(
 )
 
 
-def get_conversational_answer(db_context, chat_history, **kwargs):
+def get_conversational_answer(query, db_context, chat_history, **kwargs):
     # Formatear el contexto de la base de datos
-    context_section = f"Added Context: {db_context}\n"
+    context_section = f"El usuario ha hecho la siguiente pregunta: \"{query}\".\n"
     
-    # Formatear el historial de la conversación
-    # Puedes elegir el formato que mejor se ajuste a tu caso, aquí usamos un formato tipo diálogo
-    chat_history_section = "Chat History:\n"
+    # Formatear el contexto recuperado
+    db_context_section = f"Además, para responder la consulta podes ayudarte con la informacion de contexto y el historial de conversacion:\n{db_context}\n"
+
+    # Instrucción de respuesta
+    instruction_section = (
+        "Independientemente del idioma de la pregunta, responde siempre en español. "
+    )
+
+    chat_history_section = "Este es el historial de conversacion con el usuario que puede ser relevante para entender mejor su pregunta actual:\n"
+
     for message in chat_history:
-        role = "User" if message["role"] == "user" else "Assistant"
+        role = "Usuario" if message["role"] == "user" else "Asistente"
         chat_history_section += f"{role}: {message['content']}\n"
-    
     # Construir el prompt completo
-    full_prompt = f"{context_section}{chat_history_section}User Query: "
+    full_prompt = f"{context_section}{instruction_section}{db_context_section}{chat_history_section}"
     
     # Imprimir el prompt para depuración
     print(f"Full prompt: {full_prompt}")
+    
+    # Generar la respuesta usando el LLM
     answer = llm.invoke(full_prompt, **kwargs)
     aim_callback.flush_tracker(langchain_asset=llm)
+    
     return answer.content
