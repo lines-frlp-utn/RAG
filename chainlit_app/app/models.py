@@ -58,6 +58,6 @@ def get_conversational_answer(query, db_context, chat_history, aim_run, **kwargs
     # Generar la respuesta usando el LLM
     answer = llm.invoke(full_prompt, **kwargs)
    
-    track_text(aim_run, "answer", answer)
+    track_text(aim_run, "answer", answer.content)
     
     return answer.content
