@@ -82,7 +82,8 @@ async def context_step(results):
 async def llm_step(query, context, **kwargs):
     chat_context = cl.chat_context.to_openai()
     print(f"Chat context: {chat_context}")
-    respuesta = await cl.make_async(get_conversational_answer)(query, context, chat_context, **kwargs)
+    aim_run = cl.user_session.get("aim_run")
+    respuesta = await cl.make_async(get_conversational_answer)(query, context, chat_context, aim_run, **kwargs)
     return respuesta
 
 @cl.on_message
