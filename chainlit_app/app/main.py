@@ -1,4 +1,5 @@
 import chainlit as cl
+from app.aim_tracker import start_aim_run, end_aim_run
 from app.databases import get_context_from_db, post_embeddings
 from app.embeddingGenerator import EmbeddingGenerator
 from app.pdfExtractor import extract_text_from_pdf
@@ -17,6 +18,7 @@ def format_docs(docs):
 async def start():
     cl.user_session.set("session_number", 1)
     cl.user_session.set("memory", ConversationBufferMemory(return_messages=True))
+    cl.user_session.set("aim_run", start_aim_run())
 
     settings = await cl.ChatSettings(
         [
@@ -133,6 +135,11 @@ async def main(message: cl.Message):
     msg.content = f"{respuesta}"
 
     await msg.update()
+
+@cl.on_chat_end
+async def close():
+    aim_run = cl.user_session.get("aim_run")
+    end_aim_run(aim_run)
 
 if __name__ == "__main__":
     from chainlit.cli import run_chainlit
