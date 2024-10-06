@@ -30,7 +30,6 @@ def create_schema():
 
 
 def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
-    print("Uploading data to Milvus collection " + collection_name + "vector dim: " + len(dataWithEmbeddings[0]["vector"]) + " tokens dim: " + len(dataWithEmbeddings[0]["tokens"]))
     if client.has_collection(collection_name=collection_name):
         client.drop_collection(collection_name=collection_name)
     

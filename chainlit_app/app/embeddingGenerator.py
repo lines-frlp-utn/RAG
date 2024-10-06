@@ -1,5 +1,4 @@
 import hashlib
-
 import numpy as np
 import pymupdf
 import requests
@@ -7,7 +6,7 @@ from app.config import conf
 from rank_bm25 import BM25Okapi
 from transformers import AutoTokenizer
 
-tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
+tokenizer = AutoTokenizer.from_pretrained("bert-base-multilingual-cased")
 # http://<IP_DEL_SERVIDOR>:<PUERTO>/api/embeddings
 remote_service_url = f"{conf.MODEL_URL}:{conf.MODEL_PORT}/api/embeddings"
 
@@ -52,10 +51,26 @@ class EmbeddingGenerator:
         return result
     
     def get_tokens(self, text):
-        tokens = []
-        tokens = tokenizer.tokenize(text)
-        token_embeddings = self.get_embeddings(tokens)
+        # Dividir el texto en chunks de 512 tokens
+        token_chunks = split_text_into_chunks(text)
+        
+        token_embeddings = []
+        for chunk in token_chunks:
+            # Convertir los tokens de vuelta a texto
+            chunk_text = tokenizer.convert_tokens_to_string(chunk)
+            # Obtener el embedding del chunk
+            chunk_embedding = self.get_embeddings([chunk_text])[0]
+            token_embeddings.append(chunk_embedding)
+        
         return token_embeddings
+
+
+def split_text_into_chunks(text, max_length=512):
+    # Tokenizar el texto completo
+    tokens = tokenizer.tokenize(text)
+    # Dividir los tokens en chunks del tamaño máximo
+    chunks = [tokens[i:i + max_length] for i in range(0, len(tokens), max_length)]
+    return chunks
 
 
 def extract_text_from_pdf(pdf_path):
