@@ -8,10 +8,9 @@
             "name": "Chainlit",
             "type": "debugpy",
             "request": "launch",
-            "module": "uv",
-            // "cwd": "${workspaceFolder}/chainlit_app",
+            "module": "chainlit",
             "args": [
-                "run", "-m","--host", "0.0.0.0", "--port", "8005", "app/main.py"
+                "run", "--host", "0.0.0.0", "--port", "8005", "app/main.py"
             ],
         }
     ]

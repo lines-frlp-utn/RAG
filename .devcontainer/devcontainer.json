@@ -16,5 +16,6 @@
             ]
         }
     },
-    "postCreateCommand": "uv sync"
+    "postCreateCommand": "uv venv",
+    "postStartCommand": "uv sync"
 }

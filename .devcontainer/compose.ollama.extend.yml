@@ -1,4 +1,4 @@
- services:
+services:
   app:
     build:
       context: chainlit_app/
@@ -7,6 +7,8 @@
       # Mounts the project folder to '/workspace'. While this file is in .devcontainer,
       # mounts are relative to the first file in the list, which is a level up.
       - .:/workspace:cached
+      - /workspace/chainlit_app/.venv
+      - cache-volume:/root/.cache/uv
 
     # [Optional] Required for ptrace-based debuggers like C++, Go, and Rust
     # cap_add:
@@ -16,3 +18,7 @@
 
     # Overrides default command so things don't shut down after the process ends.
     command: ["sh", "-c", "while :; do sleep 2073600; done"]
+
+volumes:
+  cache-volume:
+    driver: local
