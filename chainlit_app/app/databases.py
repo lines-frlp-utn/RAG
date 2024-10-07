@@ -20,8 +20,8 @@ def get_context_from_db(collection_name, query):
     response = requests.post(
         f"{conf.DB_URL}:{conf.DB_PORT}/get-context",
         json={
-            "collection_name": collection_name,
-            "query": query,
+            "dataWithEmbeddings": query,
+            "collection_name": collection_name
         },
     )
     if response.status_code != 200:
