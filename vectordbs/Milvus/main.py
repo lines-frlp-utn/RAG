@@ -2,6 +2,8 @@ import fastapi
 # import json
 from pydantic import BaseModel
 from pymilvus import DataType, MilvusClient, AnnSearchRequest, WeightedRanker
+from langchain_milvus.retrievers import MilvusCollectionHybridSearchRetriever
+from langchain_milvus.utils.sparse import BM25SparseEmbedding
 
 app = fastapi.FastAPI()
 
@@ -22,7 +24,7 @@ def create_schema():
     )
     
     schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True)
-    schema.add_field(field_name="tokens", datatype=DataType.FLOAT_VECTOR, dim=1024)
+    schema.add_field(field_name="tokens", datatype=DataType.SPARSE_FLOAT_VECTOR)
     schema.add_field(field_name="vector", datatype=DataType.FLOAT_VECTOR, dim=1024)
     schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=40000) # cambiar el max_length cuando tengamos el recursive text splitter para los chunks
     
@@ -30,17 +32,34 @@ def create_schema():
 
 
 def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
-    print("Uploading data to Milvus collection " + collection_name + "vector dim: " + len(dataWithEmbeddings[0]["vector"]) + " tokens dim: " + len(dataWithEmbeddings[0]["tokens"]))
     if client.has_collection(collection_name=collection_name):
         client.drop_collection(collection_name=collection_name)
     
+    texts = [item["text"] for item in dataWithEmbeddings]
+    print("Texts: " + str(texts))
+    # Fit the model on the corpus
+    sparse_embedding_func = BM25SparseEmbedding(corpus=texts)
+    print("Sparse embedding function created")    
+
+    uploadData=[]
+    for item in dataWithEmbeddings:
+        data= {
+            "id": item["id"],
+            "text": item["text"],
+            "vector": item["vector"],
+            "tokens": sparse_embedding_func.embed_documents([item["text"]])[0],
+        }
+        uploadData.append(data)
+
+    print("Tokens added to data")
+
     schema = create_schema()
     
     client.create_collection(
         collection_name=collection_name,
         schema=schema,
-        dimension=1024,  # The vectors we will use in this demo has 768 dimensions
     )
+
     print("Collection created")
     print("Creating index")
     index_params.add_index(
@@ -53,8 +72,8 @@ def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
     print("vector Index created")
     index_params.add_index(
         field_name="tokens",
-        metric_type="COSINE",
-        index_type="IVF_FLAT",
+        metric_type="IP",
+        index_type="SPARSE_INVERTED_INDEX",
         index_name="tokens_index",
         params={ "nlist": 128 }
     )
@@ -66,11 +85,9 @@ def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
     )
     print("Index created")
 
-    print(dataWithEmbeddings)
-
     result = client.insert(
         collection_name = collection_name,
-        data = dataWithEmbeddings,
+        data = uploadData,
     )
 
     print("Docs uploaded to Milvus")
@@ -87,8 +104,10 @@ def get_context_with_filters(collection_name, query):
         limit=3
     )
 
+    query_embeddings = bm25_ef.encode_queries(query[0]["text"])
+
     sparse_request = AnnSearchRequest(
-        data=query[0]["tokens"],
+        data=query_embeddings,
         anns_field="tokens",
         param={"metric_type": "IP", "params": {"nprobe": 10}},
         limit=3

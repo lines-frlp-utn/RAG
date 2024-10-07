@@ -4,10 +4,7 @@ import numpy as np
 import pymupdf
 import requests
 from app.config import conf
-from rank_bm25 import BM25Okapi
-from transformers import AutoTokenizer
 
-tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
 # http://<IP_DEL_SERVIDOR>:<PUERTO>/api/embeddings
 remote_service_url = f"{conf.MODEL_URL}:{conf.MODEL_PORT}/api/embeddings"
 
@@ -45,17 +42,9 @@ class EmbeddingGenerator:
         embeddings = self.get_embeddings(texts)
         result = []
         for text, emb in zip(texts, embeddings):
-            token_embeddings = self.get_tokens(text)
             emb_list = np.array(emb).tolist()
-            tokens = np.array(token_embeddings).tolist()
-            result.append({"id": self.generate_id(text), "text": text, "vector": emb_list, "tokens": tokens})
+            result.append({"id": self.generate_id(text), "text": text, "vector": emb_list})
         return result
-    
-    def get_tokens(self, text):
-        tokens = []
-        tokens = tokenizer.tokenize(text)
-        token_embeddings = self.get_embeddings(tokens)
-        return token_embeddings
 
 
 def extract_text_from_pdf(pdf_path):
