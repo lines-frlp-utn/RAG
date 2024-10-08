@@ -103,17 +103,17 @@ def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
     print(result)
 
 
-def get_context_with_filters(collection_name, query):
+def  get_context_with_filters(collection_name, query):
     print("entro a la funcion")
     client.load_collection(collection_name=collection_name)
     print("collection loaded")
     dense_request = AnnSearchRequest(
-        data=query[0]["vector"],
+        data=[query[0]["vector"]],
         anns_field="vector",
-        param={"metric_type": "IP", "params": {"nprobe": 10}},
+        param={"metric_type": "COSINE", "params": {"nprobe": 10}},
         limit=3
     )
-    print("dense request created")
+    print(f"dense request created query: {query}")
 
     results = client.query(
         collection_name=collection_name, 
@@ -131,7 +131,7 @@ def get_context_with_filters(collection_name, query):
     
     print("se creo el bm25")
     print(f"query: {query[0]['text']}")
-    query_embeddings = bm25_ef.encode_queries(query[0]["text"])
+    query_embeddings = bm25_ef.encode_queries([query[0]['text']])
     print(f"se creo el query embeddings {query_embeddings}")
     sparse_request = AnnSearchRequest(
         data=[query_embeddings],
