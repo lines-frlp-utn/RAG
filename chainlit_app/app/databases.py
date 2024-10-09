@@ -16,7 +16,6 @@ def post_embeddings(dataWithEmbeddings, collection_name):
 
 
 def get_context_from_db(collection_name, query):
-    print("query comun: " + str(query))
     response = requests.post(
         f"{conf.DB_URL}:{conf.DB_PORT}/get-context",
         json={
