@@ -24,40 +24,22 @@ def get_conversational_answer(query, db_context, chat_history, aim_run, **kwargs
         "api_key": "none",
     })
     # Formatear el contexto de la base de datos
-    context_section = f"El usuario ha hecho la siguiente pregunta: \"{query}\".\n"
+    system_prompt = f"""Eres un asistente llamado lines-bot. Siempre vas a responder en español.
+    El usuario no sabe que se te proporciona un contexto, no lo menciones.
+    Para responder la consulta podes ayudarte con la informacion de contexto y el historial de conversacion:
+    {db_context}
+    """
 
-    track_text(aim_run, "context_section", context_section)
-    
-    # Formatear el contexto recuperado
-    db_context_section = f"Además, para responder la consulta podes ayudarte con la informacion de contexto y el historial de conversacion:\n{db_context}\n"
+    # Insertar el system prompt al inicio de la conversación
+    chat_history.insert(0, {"role": "system", "content": system_prompt})
 
-    track_text(aim_run, "db_context_section", db_context_section)
-
-    # Instrucción de respuesta
-    instruction_section = (
-        "Independientemente del idioma de la pregunta, responde siempre en español. "
-    )
-
-    track_text(aim_run, "instruction_section", instruction_section)
-
-    chat_history_section = "Este es el historial de conversacion con el usuario que puede ser relevante para entender mejor su pregunta actual:\n"
-
-    track_text(aim_run, "chat_history_section", chat_history_section)
-
-    for message in chat_history:
-        role = "Usuario" if message["role"] == "user" else "Asistente"
-        chat_history_section += f"{role}: {message['content']}\n"
-    # Construir el prompt completo
-    full_prompt = f"{context_section}{instruction_section}{db_context_section}{chat_history_section}"
-    
     # Imprimir el prompt para depuración
-    print(f"Full prompt: {full_prompt}")
-
-    track_text(aim_run, "full_prompt", full_prompt)
+    print(f"system prompt: {system_prompt}")
+    track_text(aim_run, "system_prompt", system_prompt)
+    track_text(aim_run, "db_context_section", db_context)
+    track_text(aim_run, "user_prompt", query)
     
     # Generar la respuesta usando el LLM
-    answer = llm.invoke(full_prompt, **kwargs)
-   
+    answer = llm.invoke(chat_history, **kwargs)
     track_text(aim_run, "answer", answer.content)
-    
     return answer.content
