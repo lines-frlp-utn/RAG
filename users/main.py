@@ -14,6 +14,7 @@ Base = declarative_base()
 
 class UserCreateDTO(BaseModel):
     identifier: str
+    password: str
     role_name: str
 
 class RoleResponseDTO(BaseModel):
@@ -31,6 +32,7 @@ class Usuario(Base):
     __tablename__ = "usuarios"
     id = Column(Integer, primary_key=True, index=True)
     identifier = Column(String(50), unique=True, index=True, nullable=False)
+    password = Column(String(50), nullable=False)
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
 
     role = relationship("Role", back_populates="users")
@@ -60,9 +62,9 @@ def startup_event():
     init_roles(db)
     db.close()
 
-@app.get("/users/exists/{identifier}")
-async def user_exists(identifier: str, db: Session = Depends(get_db)):
-    user = db.query(Usuario).filter(Usuario.identifier == identifier).first()
+@app.get("/users/login/{identifier}")
+async def user_exists(identifier: str, password=str, db: Session = Depends(get_db)):
+    user = db.query(Usuario).filter(Usuario.identifier == identifier).filter(Usuario.password == password).first()
     if user:
         userResponse = RoleResponseDTO(exists=True, role_name=user.role.name)
         return userResponse
@@ -77,11 +79,11 @@ async def create_user(user: UserCreateDTO, db: Session = Depends(get_db)):
     existing_user = db.query(Usuario).filter(Usuario.identifier == user.identifier).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="User already exists")
-    new_user = Usuario(identifier=user.identifier, role_id=role.id)
+    new_user = Usuario(identifier=user.identifier, role_id=role.id, password=user.password)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return UserCreateDTO(identifier=new_user.identifier, role_name=role.name)
+    return UserCreateDTO(identifier=new_user.identifier, role_name=role.name, password=new_user.password)
 
 @app.patch("/users/role/{identifier}")
 async def update_user_role(identifier: str, role: str, db: Session = Depends(get_db)):
@@ -94,4 +96,4 @@ async def update_user_role(identifier: str, role: str, db: Session = Depends(get
     user.role_id = new_role.id
     db.commit()
     db.refresh(user)
-    return UserCreateDTO(identifier=user.identifier, role_name=new_role.name)
+    return UserCreateDTO(identifier=user.identifier, role_name=new_role.name, password=user.password)

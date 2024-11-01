@@ -20,12 +20,17 @@ def format_docs(docs):
 @cl.password_auth_callback
 def auth_callback(username: str, password: str):
     if (username and password):
-        user = user_exists(username)
+        user = user_exists(username, password)
         if user.exists is False:
-            create_user(username, Role.CLIENTE)
-            return cl.User(
-                identifier=username, metadata={"role": Role.CLIENTE, "provider": "credentials"}
-            )
+            user = create_user(username, Role.CLIENTE, password)
+            if user:
+                print(f"User created: {username}")
+                return cl.User(
+                    identifier=username, metadata={"role": Role.CLIENTE, "provider": "credentials"}
+                )
+            else:
+                print(f"Error creating user: {username}")
+                return None
         else:
             print(f"User exists: {user}")
             return cl.User(
@@ -87,6 +92,7 @@ async def update_settings(settings):
 async def resume(thread: ThreadDict):
     memory = ConversationBufferMemory(return_messages=True)
     settings = cl.user_session.get("settings")
+    cl.user_session.set("aim_run", start_aim_run())
     await update_settings(settings)
     root_messages = [m for m in thread["steps"] if m["parentId"] is None]
     for message in root_messages:
