@@ -6,8 +6,7 @@ from app.splitter import pdf_to_chunks
 from chainlit.input_widget import Select, Slider
 from langchain.memory import ConversationBufferMemory
 from chainlit.types import ThreadDict
-
-from typing import Optional
+from app.auth import create_user, user_exists, UserExistsDTOResponse, Role
 
 embedding_generator = EmbeddingGenerator()
 collection_name = "prueba_lines"
@@ -19,11 +18,17 @@ def format_docs(docs):
 @cl.password_auth_callback
 def auth_callback(username: str, password: str):
     if (username and password):
-        # Aquí se debería hacer una llamada a un servicio de autenticación
-        role = "admin"
-        return cl.User(
-            identifier=username, metadata={"role": role, "provider": "credentials"}
-        )
+        user = user_exists(username)
+        if user.exists is False:
+            create_user(username, Role.CLIENTE)
+            return cl.User(
+                identifier=username, metadata={"role": Role.CLIENTE, "provider": "credentials"}
+            )
+        else:
+            print(f"User exists: {user}")
+            return cl.User(
+                identifier=username, metadata={"role": user.role_name, "provider": "credentials"}
+            )
     else:
         return None
 
@@ -63,7 +68,8 @@ async def start():
         ]
     ).send()
     if (app_user):
-        cl.Message(content=f"¡Hola, {app_user.identifier}! ¿En qué puedo ayudarte hoy?").send()
+        msg = cl.Message(content=f"¡Hola, {app_user.identifier}! ¿En qué puedo ayudarte hoy?")
+        await msg.send()
     else:
         cl.Message(content="Ha habido un error de autenticación. Por favor, vuelve a intentar iniciar sesión.").send()
     await update_settings(settings)
@@ -122,10 +128,11 @@ async def llm_step(query, context, **kwargs):
 @cl.on_message
 async def main(message: cl.Message):
     memory = cl.user_session.get("memory")
+    user = cl.user_session.get("user")
     session_number = cl.user_session.get("session_number")
     settings = cl.user_session.get("settings")
 
-    if message.elements:
+    if message.elements and user.metadata["role"] == Role.ADMIN:
         file = message.elements[0]
         msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
         await msg.send()

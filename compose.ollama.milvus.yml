@@ -24,15 +24,16 @@ services:
     ports:
       - 8000:8000
     env_file:
-      - chainlit_app/.env
+      - .env
     environment:
-      - MODEL_URL=${MODEL_URL:-http://ollama}
-      - MODEL_PORT=${MODEL_PORT:-11434}
-      - DB_URL=http://db-milvus
-      - DB_PORT=8006
-      - USERS_API_URL = http://users_db
-      - USERS_API_PORT = 8009
-      - LITERALAI_API_KEY=${LITERALAI_API_KEY}
+      MODEL_URL: ${MODEL_URL:-http://ollama}
+      MODEL_PORT: ${MODEL_PORT:-11434}
+      DB_URL: http://db-milvus
+      DB_PORT: 8006
+      USERS_API_URL: http://users_db
+      USERS_API_PORT: 8009
+      LITERALAI_API_KEY: ${LITERALAI_API_KEY}
+      CHAINLIT_AUTH_SECRET: ${CHAINLIT_AUTH_SECRET}
     volumes:
       - rag-volume:/chainlit_app/database
       - transformer-volume:/~/.cache/huggingface/transformers/

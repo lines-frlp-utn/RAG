@@ -1,44 +1,38 @@
 import requests
 from app.config import conf
+from pydantic import BaseModel
+from enum import Enum
 
-class UserExistsDTOResponse:
-    def __init__(self, exists: bool):
-        self.exists = exists
+class Role(str, Enum):
+    ADMIN = "ADMIN"
+    CLIENTE = "CLIENTE"
+class UserExistsDTOResponse(BaseModel):
+    exists: bool
+    role_name: Role | None
 
 def user_exists(userIdentifier: str):
     print(f"user: {userIdentifier} ¿exists?")
     response = requests.get(
-        f"{conf.USERS_API_URL}:{conf.USERS_API_URL}users/exists/{userIdentifier}",
+        f"{conf.USERS_API_URL}:{conf.USERS_API_PORT}/users/exists/{userIdentifier}",
     )
     if response.status_code != 200:
         print(f"Error: {response.status_code} - {response.text}")
     else:
-        print(f"Request successful: {response.status_code} - {response.text}")
-        response.text
-        return response.text
+        data = response.json()
+        user = UserExistsDTOResponse(**data)
+        return user
 
 def create_user(userIdentifier, role):
     print(f"userIdentifier: {userIdentifier}")
     print(f"role: {role}")
     response = requests.post(
-        f"{conf.USERS_API_URL}:{conf.USERS_API_URL}/users",
+        f"{conf.USERS_API_URL}:{conf.USERS_API_PORT}/users/create",
         json={
             "identifier": userIdentifier,
-            "role": role,
+            "role_name": role,
         }
     )
     if response.status_code != 200:
         print(f"Error: {response.status_code} - {response.text}")
     else:
         print(f"Request successful - user created successfully {response.status_code} - {response.text}")
-
-def get_user_role(userIdentifier):
-    print(f"userIdentifier: {userIdentifier}")
-    response = requests.get(
-        f"{conf.USERS_API_URL}:{conf.USERS_API_URL}/users/role/{userIdentifier}",
-    )
-    if response.status_code != 200:
-        print(f"Error: {response.status_code} - {response.text}")
-    else:
-        print(f"Request successful {response.status_code} - {response.text}")
-    return response.text

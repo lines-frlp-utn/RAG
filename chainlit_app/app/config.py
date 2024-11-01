@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     LITERALAI_API_KEY: str
     USERS_API_URL: str
     USERS_API_PORT: int
+    CHAINLIT_AUTH_SECRET: str
 
 
 conf = Settings()
