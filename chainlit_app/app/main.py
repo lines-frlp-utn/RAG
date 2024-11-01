@@ -5,19 +5,33 @@ from app.models import get_conversational_answer
 from app.splitter import pdf_to_chunks
 from chainlit.input_widget import Select, Slider
 from langchain.memory import ConversationBufferMemory
+from chainlit.types import ThreadDict
+
+from typing import Optional
 
 embedding_generator = EmbeddingGenerator()
 collection_name = "prueba_lines"
 
-
 def format_docs(docs):
     return "\n\n".join([d.page_content for d in docs])
+
+# Callback de autenticación
+@cl.password_auth_callback
+def auth_callback(username: str, password: str):
+    if (username and password):
+        # Aquí se debería hacer una llamada a un servicio de autenticación
+        role = "admin"
+        return cl.User(
+            identifier=username, metadata={"role": role, "provider": "credentials"}
+        )
+    else:
+        return None
 
 
 @cl.on_chat_start
 async def start():
     cl.user_session.set("session_number", 1)
-
+    app_user = cl.user_session.get("user")
     cl.user_session.set("memory", ConversationBufferMemory(return_messages=True))
     settings = await cl.ChatSettings(
         [
@@ -48,12 +62,30 @@ async def start():
             ),
         ]
     ).send()
+    if (app_user):
+        cl.Message(content=f"¡Hola, {app_user.identifier}! ¿En qué puedo ayudarte hoy?").send()
+    else:
+        cl.Message(content="Ha habido un error de autenticación. Por favor, vuelve a intentar iniciar sesión.").send()
     await update_settings(settings)
 
 
 @cl.on_settings_update
 async def update_settings(settings):
     cl.user_session.set("settings", settings)
+
+@cl.on_chat_resume
+async def resume(thread: ThreadDict):
+    memory = ConversationBufferMemory(return_messages=True)
+    settings = cl.user_session.get("settings")
+    await update_settings(settings)
+    root_messages = [m for m in thread["steps"] if m["parentId"] is None]
+    for message in root_messages:
+        if message["type"] == "user_message":
+            memory.chat_memory.add_user_message(message["output"])
+        else:
+            memory.chat_memory.add_ai_message(message["output"])
+    cl.user_session.set("memory", memory)
+
 
 
 @cl.step
@@ -89,6 +121,7 @@ async def llm_step(query, context, **kwargs):
 
 @cl.on_message
 async def main(message: cl.Message):
+    memory = cl.user_session.get("memory")
     session_number = cl.user_session.get("session_number")
     settings = cl.user_session.get("settings")
 
@@ -123,6 +156,9 @@ async def main(message: cl.Message):
     msg.content = f"{respuesta}"
 
     await msg.update()  # actualizamos el mensaje con los nuevos datos
+    
+    memory.chat_memory.add_user_message(message.content)
+    memory.chat_memory.add_ai_message(msg.content)
 
 
 if __name__ == "__main__":
