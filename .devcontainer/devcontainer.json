@@ -15,5 +15,7 @@
                 "vivaxy.vscode-conventional-commits"
             ]
         }
-    }
+    },
+    "postCreateCommand": "uv venv",
+    "postStartCommand": "uv sync"
 }

@@ -1,34 +1,47 @@
 import hashlib
+import numpy as np
+import pymupdf
+import requests
+from app.config import conf
 
-import pymupdf  # PyMuPDF
-import torch
-from transformers import AutoModel, AutoTokenizer
-
-# model_distibert = "distilbert-base-multilingual-cased"
-model_bertMini = "sentence-transformers/all-MiniLM-L6-v2"
+# http://<IP_DEL_SERVIDOR>:<PUERTO>/api/embeddings
+remote_service_url = f"{conf.MODEL_URL}:{conf.MODEL_PORT}/api/embeddings"
 
 
 class EmbeddingGenerator:
-    def __init__(self, model_name=model_bertMini):
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModel.from_pretrained(model_name)
+    def __init__(self, service_url=remote_service_url, model_name="mxbai-embed-large"):
+        self.service_url = service_url
+        self.model_name = model_name
 
     def generate_id(self, text):
         return int(hashlib.md5(text.encode()).hexdigest(), 16) % (10**8)
 
     def get_embeddings(self, texts):
-        inputs = self.tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
-        with torch.no_grad():
-            outputs = self.model(**inputs)
-        last_hidden_state = outputs.last_hidden_state
-        embeddings = last_hidden_state.mean(dim=1)
+        embeddings = []
+        for text in texts:
+            try:
+                response = requests.post(
+                    self.service_url,
+                    json={
+                        "model": self.model_name,
+                        "prompt": f"Represent this sentence for searching relevant passages: {text}",
+                    },
+                )
+                response.raise_for_status()
+                response_data = response.json()
+                embeddings.append(response_data["embedding"])
+            except requests.exceptions.RequestException as e:
+                print(f"Error en la solicitud: {e}")
+            except ValueError as e:
+                print(f"Error al decodificar JSON: {e}")
+                print(f"Respuesta del servidor: {response.text}")
         return embeddings
 
     def format_for_database(self, texts):
         embeddings = self.get_embeddings(texts)
         result = []
         for text, emb in zip(texts, embeddings):
-            emb_list = emb.tolist()
+            emb_list = np.array(emb).tolist()
             result.append({"id": self.generate_id(text), "text": text, "vector": emb_list})
         return result
 
@@ -41,17 +54,3 @@ def extract_text_from_pdf(pdf_path):
         text = page.get_text()
         texts.append(text)
     return texts
-
-
-if __name__ == "__main__":
-    pdf_path = "../tests/pdfs_prueba/algoritmos.pdf"  # Reemplazar con la ruta del archivo PDF
-    texts = extract_text_from_pdf(pdf_path)
-
-    embedding_generator = EmbeddingGenerator()
-
-    # Obtener la lista de diccionarios en el formato [{"text": <chunk>, "embeddings": <embedding>}]
-    embedding_list = embedding_generator.format_for_database(texts)
-
-    for item in embedding_list:
-        print(f"Text: {item['text']}")
-        # print(f"Embedding: {item['embeddings'][:5]}...")  # Imprime los primeros 5 valores de los embeddings
