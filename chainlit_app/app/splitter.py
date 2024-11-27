@@ -23,7 +23,7 @@ def split_text_with_langchain(texts, chunk_size=1000, chunk_overlap=200):
     # Usar comprensión de listas para dividir texto
     return [chunk for text in texts for chunk in text_splitter.split_text(text)]
 
-def refine_split_by_similarity(chunks, embeddings, threshold=0.7):
+def refine_split_by_similarity(chunks, embeddings, threshold=0.9):
 
     """
     Refina y combina fragmentos de texto basándose en su similitud semántica utilizando
