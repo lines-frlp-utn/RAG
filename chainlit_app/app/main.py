@@ -64,7 +64,8 @@ async def update_settings(settings):
 @cl.step
 async def vectordb_results_step(query):
     settings = cl.user_session.get("settings")
-    query_embedding = await cl.make_async(embedding_generator.get_embeddings)([query])
+    query_embedding = await cl.make_async(embedding_generator.format_for_database)([query])
+    print(f"Query embedding: {query_embedding}")
     results = await cl.make_async(get_context_from_db)(
         collection_name=collection_name,
         query=query_embedding,
@@ -106,19 +107,26 @@ async def main(message: cl.Message):
         # await msg.send()
         try:
             # Extraer el texto del PDF
+            print(f"Extrayendo texto de `{file.name}`...")
             texts = extract_text_from_pdf(file.path)
 
             # Splittear el texto en chunks semánticos
+            print(f"Splitteando texto de `{file.name}`...")
             chunks = split_text_with_langchain(texts)
 
             # Generar los embeddings de los chunks
+            print(f"Generando embeddings de `{file.name}`...")
             embeddings = await cl.make_async(embedding_generator.get_embeddings)(chunks)
 
             # Refinar los chunks según la similitud coseno
+            print(f"Refinando chunks de `{file.name}`...")
             refined_chunks = refine_split_by_similarity(chunks, embeddings)
 
             # Formatear y cargar los embeddings en la base de datos
-            embeddings_data = embedding_generator.format_for_database(refined_chunks)
+            print(f"Formateando embeddings de `{file.name}`...")
+            embeddings_data = await cl.make_async(embedding_generator.format_for_database)(refined_chunks)
+            print(f"Embeddings data: {embeddings_data}")
+            print("haciendo el post")
             result = await cl.make_async(post_embeddings)(
                 collection_name=collection_name, dataWithEmbeddings=embeddings_data
             )

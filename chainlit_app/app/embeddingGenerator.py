@@ -1,5 +1,4 @@
 import hashlib
-
 import numpy as np
 import pymupdf
 import requests

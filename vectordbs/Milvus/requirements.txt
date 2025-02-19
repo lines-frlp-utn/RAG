@@ -3,3 +3,6 @@ fastapi
 uvicorn
 python-multipart
 pydantic
+tensorflow
+pymilvus[model]
+langchain-milvus
