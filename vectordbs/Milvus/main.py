@@ -7,6 +7,7 @@ app = fastapi.FastAPI()
 # Conexión a Milvus
 client = MilvusClient(uri="http://milvus-standalone:19530")
 
+
 class EmbeddingData(BaseModel):
     dataWithEmbeddings: list[dict]
     collection_name: str
@@ -45,15 +46,18 @@ def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
         consistency_level="Strong"
     )
     print("Colección creada.")
+    
+    index_params = MilvusClient.prepare_index_params()
+    
+    index_params.add_index(
+    field_name="vector",
+    metric_type="COSINE",
+    index_type="IVF_FLAT",
+    index_name="vector_index",
+    params={ "nlist": 128 }
+)
 
-    index_params = {
-        "field_name": "vector",
-        "metric_type": "COSINE",
-        "index_type": "IVF_FLAT",
-        "index_name": "vector_index",
-        "params": {"nlist": 128}
-    }
-
+    
     client.create_index(
         collection_name=collection_name,
         index_params=index_params,
