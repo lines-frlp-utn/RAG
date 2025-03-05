@@ -1,6 +1,7 @@
 import fastapi
 from pydantic import BaseModel
 from pymilvus import DataType, MilvusClient
+import numpy as np
 
 app = fastapi.FastAPI()
 
@@ -14,7 +15,7 @@ class EmbeddingData(BaseModel):
 
 class QueryData(BaseModel):
     collection_name: str
-    query: list[list[float]]  # Lista de embeddings para búsqueda
+    query: list[dict]  # Lista de embeddings para búsqueda
 
 def create_schema():
     schema = client.create_schema(
@@ -29,6 +30,7 @@ def create_schema():
     return schema
 
 def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
+    print('Entro a la funcion upload to vector db')
     if client.has_collection(collection_name=collection_name):
         client.drop_collection(collection_name=collection_name)
         print(f'Colección "{collection_name}" eliminada.')
@@ -70,6 +72,7 @@ def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
 
 def get_context_with_filters(collection_name, query):
     print("Iniciando búsqueda...")
+    query_vector = np.array(query[0]['vector'])
     
     client.load_collection(collection_name=collection_name)
     print(f'Colección "{collection_name}" cargada.')
@@ -78,12 +81,25 @@ def get_context_with_filters(collection_name, query):
         collection_name=collection_name,
         anns_field="vector", 
         output_fields=["text"],
-        data=query,
+        data=[query_vector],
         limit=3,
         search_params={"metric_type": "COSINE"}
     )
 
-    response = [doc["text"] for doc in results]
+    
+    print("Resultados obtenidos:", results)
+
+
+    response = []
+    for hits in results:
+        for doc in hits:
+            entity = doc.get("entity", {})
+            if "text" in entity:
+                response.append(entity["text"])
+            else:
+                response.append("Texto no disponible")
+    
+ 
     return response
 
 @app.post("/upload-embeddings")

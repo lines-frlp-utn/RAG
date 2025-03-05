@@ -15,4 +15,5 @@ dependencies = [
     "aim>=3.24.0",
     "langchain-core>=0.3.36",
     "langchain-text-splitters>=0.3.6",
+    "scikit-learn"
 ]
