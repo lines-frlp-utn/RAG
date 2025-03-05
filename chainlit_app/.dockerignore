@@ -1,0 +1,10 @@
+.files/
+.venv/
+__pycache__
+.pytest_cache
+.dockerignore
+tests/
+database/
+Dockerfile
+dev.Dockerfile
+.vscode/
