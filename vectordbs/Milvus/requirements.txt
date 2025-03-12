@@ -4,4 +4,5 @@ uvicorn
 python-multipart
 pydantic
 pymilvus[model]
-scikit-learn
+scikit-learn>=1.0.0
+scipy>=1.7.0

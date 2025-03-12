@@ -1,15 +1,15 @@
 import fastapi
 from pydantic import BaseModel
-from pymilvus import DataType, MilvusClient, AnnSearchRequest, RRFRanker
-import numpy as np
+from pymilvus import DataType, MilvusClient, AnnSearchRequest, RRFRanker, CollectionSchema, FieldSchema
 from sklearn.feature_extraction.text import TfidfVectorizer
+from scipy.sparse import csr_matrix
 
 app = fastapi.FastAPI()
 
 # Conexión a Milvus
 client = MilvusClient(uri="http://milvus-standalone:19530")
 
-# Inicializar el vectorizador TF-IDF
+# Crear el vectorizador TF-IDF
 tfidf_vectorizer = TfidfVectorizer()
 
 class EmbeddingData(BaseModel):
@@ -21,125 +21,127 @@ class QueryData(BaseModel):
     query: list[dict]  # Lista de embeddings para búsqueda
 
 def create_schema():
-    schema = client.create_schema(
+    schema = MilvusClient.create_schema(
         auto_id=False,
         enable_dynamic_field=True,
     )
-    
     schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True)
-    schema.add_field(field_name="dense_vector", datatype=DataType.FLOAT_VECTOR, dim=1024)
-    schema.add_field(field_name="sparse_vector", datatype=DataType.SPARSE_FLOAT_VECTOR)
-    schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=40000)
-    
+    schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=4000)
+    schema.add_field(field_name="sparse", datatype=DataType.SPARSE_FLOAT_VECTOR)
+    schema.add_field(field_name="dense", datatype=DataType.FLOAT_VECTOR, dim=1024)
     return schema
 
+def sparse_matrix_to_dict(matrix: csr_matrix) -> dict:
+    
+    return {int(index): float(value) for index, value in zip(matrix.indices, matrix.data)}
+
 def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
-    print('Entro a la funcion upload to vector db')
+    print('ENTRANDO A LA FUNCION UPLOAD')
+
     if client.has_collection(collection_name=collection_name):
         client.drop_collection(collection_name=collection_name)
-        print(f'Colección "{collection_name}" eliminada.')
-
+        print(f'Colección borrada: {collection_name}')
+        
+    ## Parseamos los datos
     texts = [item["text"] for item in dataWithEmbeddings]
-    sparse_vectors = tfidf_vectorizer.fit_transform(texts)
+
+    # Aprende el vocabulario y genera embeddings TF-IDF (MATRIZ CSR)
+    tfidf_matrix = tfidf_vectorizer.fit_transform(texts)
+    print('Embeddings TF-IDF generados')
 
     uploadData = []
     for i, item in enumerate(dataWithEmbeddings):
-        sparse_vector = sparse_vectors[i]
-        sparse_dict = {int(index): float(value) for index, value in zip(sparse_vector.indices, sparse_vector.data)}
         data = {
             "id": item["id"],
             "text": item["text"],
-            "dense_vector": item["vector"],
-            "sparse_vector": sparse_dict,
+            "dense": item["vector"],
+            "sparse": sparse_matrix_to_dict(tfidf_matrix[i]),
         }
         uploadData.append(data)
-    
-    print("Sparse Vectors added to data")
-    
+    print(uploadData[0])
+
+    ## Creación del esquema
     schema = create_schema()
-    print("Schema creado.")
-    
-    index_params = MilvusClient.prepare_index_params()
-    
+
+    # Creación y mod de índices
+    index_params = client.prepare_index_params()
     index_params.add_index(
-        field_name="dense_vector",
+        field_name="dense",
         index_name="dense_index",
         index_type="IVF_FLAT",
         metric_type="IP",
         params={"nlist": 128},
     )
-    
     index_params.add_index(
-        field_name="sparse_vector",
+        field_name="sparse",
         index_name="sparse_index",
-        index_type="SPARSE_INVERTED_INDEX",  # Index type for sparse vectors
-        metric_type="IP",  # Currently, only IP (Inner Product) is supported for sparse vectors
-        params={"inverted_index_algo": "DAAT_MAXSCORE"},  # The ratio of small vector values to be dropped during indexing
+        index_type="SPARSE_INVERTED_INDEX",
+        metric_type="IP",
+        params={"inverted_index_algo": "DAAT_MAXSCORE"},
     )
-    
+        
+    ## Creamos la colección
     client.create_collection(
         collection_name=collection_name,
-        index_params=index_params,
         schema=schema,
+        index_params=index_params
     )
-    print("Coleccion creada.")
 
-    print(f"SPARSE_VECTORS", uploadData[0]['sparse_vector'])
-    print(uploadData[0])
-    result = client.insert(collection_name=collection_name, data=uploadData)
-    print("Documentos subidos a Milvus:", result)
+    ## Insertamos los datos
+    res = client.insert(collection_name=collection_name, data=uploadData)
+    print(f'Cargados con éxito: {res}')
 
 def get_context_with_filters(collection_name, query):
-    print("Iniciando búsqueda...")  
-      
-    ##DENSE QUERY VECTOR
+    print('ENTRANDO A LA FUNCION GET CONTEXT')
+    
+    ## Campo dense
     dense_query_vector = query[0]['vector']
-    print(f"Query dense_vector: {dense_query_vector}")
-    
-    search_param_1 = {
+    print(dense_query_vector)
+    dense_param={
         "data": [dense_query_vector],
-        "anns_field": "dense_vector",
+        "anns_field": "dense",
         "param": {
-            "metric_type": "IP",
-            "params": {"nprobe": 10}
-        },
-        "limit": 2
+        "metric_type": "IP",
+        "params": {"nprobe": 10}
+    },
+    "limit": 2
     }
-    request_1 = AnnSearchRequest(**search_param_1)
+    request_1 = AnnSearchRequest(**dense_param)
     
-    #SPARSE QUERY VECTOR
-    sparse_query_vector = tfidf_vectorizer.transform([query[0]['text']])
-    sparse_dict = int(index): float(value) for index, value in zip(sparse_query_vector.indices, sparse_query_vector.data)
-    print(f"Query sparse_vector: sparse_dict}")
-    
-    search_param_2 = {
-        "data": [sparse_dict],
-        "anns_field": "sparse_vector",
+    ## Campo sparse
+    # Convertir la query a embedding TF-IDF
+    query_text = query[0]['text']
+    query_tfidf = tfidf_vectorizer.transform([query_text])
+    sparse_query_vector = sparse_matrix_to_dict(query_tfidf)
+    print(sparse_query_vector)
+
+    sparse_param = {
+        "data": [sparse_query_vector],
+        "anns_field": "sparse",
         "param": {
             "metric_type": "IP",
             "params": {}
         },
         "limit": 2
     }
-    request_2 = AnnSearchRequest(**search_param_2)
+    request_2 = AnnSearchRequest(**sparse_param)
     
-    #Requests
+    ## Creamos la lista de requests
     reqs = [request_1, request_2]
     
-    #ReRanker
-    ranker = RRFRanker() #60 =>default
+    ## Creamos ReRanker
+    ranker = RRFRanker() # ==> Default en k=60
     
-    #Busqueda Hibrida
+    ## Realizamos la búsqueda
     res = client.hybrid_search(
         collection_name=collection_name,
         reqs=reqs,
         ranker=ranker,
-        limit=2
+        limit=2,
+        output_fields=['text']
     )
-    print(f"Resultados: {res}")
-    
-    client.load_collection(collection_name=collection_name)
-    print(f'Colección "{collection_name}" cargada.')
+    print(f'Resultado', res)
+    return res
 
 @app.post("/upload-embeddings")
 def upload(data: EmbeddingData):
