@@ -1,5 +1,5 @@
 import numpy as np
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 
 
 def cosine_similarity(vec1, vec2):
@@ -29,6 +29,19 @@ def split_text_with_langchain(texts, chunk_size=1000, chunk_overlap=200):
 
     # Usar comprensión de listas para dividir texto
     return [chunk for text in texts for chunk in text_splitter.split_text(text)]
+
+
+def split_markdown_text(text) -> list:
+    headers_to_split_on = [
+        ("#", "Header 1"),
+        ("##", "Header 2"),
+        ("###", "Header 3"),
+        ("####", "Header 4"),
+        ("#####", "Header 5"),
+        # ("######", "Header 6")
+    ]
+    markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on)
+    return markdown_splitter.split_text(text)
 
 
 def refine_split_by_similarity(chunks, embeddings, threshold=0.9):

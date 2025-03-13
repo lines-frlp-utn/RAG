@@ -21,20 +21,16 @@ class EmbeddingGenerator:
     def generate_id(self, text):
         return int(hashlib.md5(text.encode()).hexdigest(), 16) % (10**8)
 
-    def get_embeddings(self, texts):
+    def get_embeddings(self, texts: list[str]):
         try:
             embeddings = self.embedding_model.embed_documents(texts)
         except Exception as e:
             print(f"Error al obtener embeddings: {e}")
         return embeddings
 
-    def format_for_database(self, texts):
-        embeddings = self.get_embeddings(texts)
+    def format_for_database(self, embeddings: list[list[float]], chunks: list[str]) -> list[dict]:
         result = []
-        for text, emb in zip(texts, embeddings):
+        for text, emb in zip(chunks, embeddings):
             emb_list = np.array(emb).tolist()
             result.append({"id": self.generate_id(text), "text": text, "vector": emb_list})
         return result
-
-
-

@@ -4,7 +4,7 @@ from app.databases import get_context_from_db, post_embeddings
 from app.embeddingGenerator import EmbeddingGenerator
 from app.models import get_conversational_answer
 from app.pdfExtractor import extract_text_from_pdf
-from app.splitter import refine_split_by_similarity, split_text_with_langchain
+from app.splitter import split_markdown_text
 from chainlit.input_widget import Select, Slider
 
 # from langchain.memory import ConversationBufferMemory
@@ -64,7 +64,7 @@ async def update_settings(settings):
 @cl.step
 async def vectordb_results_step(query):
     settings = cl.user_session.get("settings")
-    query_embedding = await cl.make_async(embedding_generator.format_for_database)([query])
+    query_embedding = await cl.make_async(embedding_generator.get_embeddings)([query])
     print(f"Query embedding: {query_embedding}")
     results = await cl.make_async(get_context_from_db)(
         collection_name=collection_name,
@@ -108,23 +108,25 @@ async def main(message: cl.Message):
         try:
             # Extraer el texto del PDF
             print(f"Extrayendo texto de `{file.name}`...")
-            texts = extract_text_from_pdf(file.path)
+            text = extract_text_from_pdf(file.path)
 
             # Splittear el texto en chunks semánticos
             print(f"Splitteando texto de `{file.name}`...")
-            chunks = split_text_with_langchain(texts)
+            chunks = split_markdown_text(text)
 
             # Generar los embeddings de los chunks
             print(f"Generando embeddings de `{file.name}`...")
             embeddings = await cl.make_async(embedding_generator.get_embeddings)(chunks)
 
             # Refinar los chunks según la similitud coseno
-            print(f"Refinando chunks de `{file.name}`...")
-            refined_chunks = refine_split_by_similarity(chunks, embeddings)
+            # print(f"Refinando chunks de `{file.name}`...")
+            # refined_chunks = refine_split_by_similarity(chunks, embeddings)
 
             # Formatear y cargar los embeddings en la base de datos
             print(f"Formateando embeddings de `{file.name}`...")
-            embeddings_data = await cl.make_async(embedding_generator.format_for_database)(refined_chunks)
+            embeddings_data = await cl.make_async(embedding_generator.format_for_database)(
+                embeddings, chunks
+            )
             print(f"Embeddings data: {embeddings_data}")
             print("haciendo el post")
             result = await cl.make_async(post_embeddings)(
