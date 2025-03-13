@@ -1,34 +1,23 @@
-x-ollama: &ollama-base
-  image: ollama/ollama
-  volumes:
-    - ollama:/root/.ollama
-  environment:
-    - OLLAMA_DEBUG=true
-    - CUDA_VISIBLE_DEVICES=0 
-  deploy:
-    resources:
-      reservations:
-        devices:
-          - driver: nvidia
-            count: 1
-            capabilities: [gpu]
-
-
 services:
 
-  ollama-init:
-    << : *ollama-base
-    restart: no
-    entrypoint: bash -c "ollama serve & sleep 10 ; ollama pull llama3.1; ollama pull gemma2:2b; ollama pull mxbai-embed-large"
-
   ollama:
-    << : *ollama-base
     container_name: ollama
+    image: ollama/ollama:0.6.0
+    volumes:
+      - ollama:/root/.ollama
     ports:
-    - "11434:11434"
-    depends_on:
-      ollama-init:
-        condition: service_completed_successfully
+      - "11434:11434"
+    environment:
+      - OLLAMA_DEBUG=true
+      - CUDA_VISIBLE_DEVICES=0
+    entrypoint: bash -c "ollama serve & pid=$!; sleep 5; ollama pull llama3.1; ollama pull gemma2:2b; ollama pull granite-embedding:278m; wait $pid"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   
   aim-server:
