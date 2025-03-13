@@ -1,40 +1,31 @@
 import hashlib
+
 import numpy as np
 import pymupdf
-import requests
 from app.config import conf
+from langchain_openai import OpenAIEmbeddings
 
 # http://<IP_DEL_SERVIDOR>:<PUERTO>/api/embeddings
 remote_service_url = f"{conf.MODEL_URL}:{conf.MODEL_PORT}/api/embeddings"
 
 
 class EmbeddingGenerator:
-    def __init__(self, service_url=remote_service_url, model_name="mxbai-embed-large"):
+    def __init__(self, service_url=remote_service_url, model_name="granite-embedding"):
         self.service_url = service_url
-        self.model_name = model_name
+        self.embedding_model = OpenAIEmbeddings(
+            base_url=service_url,
+            model=model_name,
+            api_key="none",
+        )
 
     def generate_id(self, text):
         return int(hashlib.md5(text.encode()).hexdigest(), 16) % (10**8)
 
     def get_embeddings(self, texts):
-        embeddings = []
-        for text in texts:
-            try:
-                response = requests.post(
-                    self.service_url,
-                    json={
-                        "model": self.model_name,
-                        "prompt": f"Represent this sentence for searching relevant passages: {text}",
-                    },
-                )
-                response.raise_for_status()
-                response_data = response.json()
-                embeddings.append(response_data["embedding"])
-            except requests.exceptions.RequestException as e:
-                print(f"Error en la solicitud: {e}")
-            except ValueError as e:
-                print(f"Error al decodificar JSON: {e}")
-                print(f"Respuesta del servidor: {response.text}")
+        try:
+            embeddings = self.embedding_model.embed_documents(texts)
+        except Exception as e:
+            print(f"Error al obtener embeddings: {e}")
         return embeddings
 
     def format_for_database(self, texts):
