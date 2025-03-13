@@ -19,8 +19,8 @@ def get_context_from_db(collection_name, query):
     response = requests.post(
         f"{conf.DB_URL}:{conf.DB_PORT}/get-context",
         json={
-            "dataWithEmbeddings": query,
-            "collection_name": collection_name
+            "collection_name": collection_name,
+            "query": query ##Esto era query No queryEmbedding!!!
         },
     )
     if response.status_code != 200:
