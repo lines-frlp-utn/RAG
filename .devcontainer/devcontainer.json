@@ -1,6 +1,6 @@
 {
     "name": "Chainlit dev container",
-    "dockerComposeFile": ["../compose.ollama.chroma.yml", "compose.ollama.extend.yml"],
+    "dockerComposeFile": ["../compose.milvus.yml", "compose.extend.yml"],
 
     "service": "app",
     "workspaceFolder": "/workspace/chainlit_app",

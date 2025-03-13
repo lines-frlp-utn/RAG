@@ -10,6 +10,7 @@ services:
     environment:
       - OLLAMA_DEBUG=true
       - CUDA_VISIBLE_DEVICES=0
+      - OLLAMA_CONTEXT_LENGTH=8192
     entrypoint: bash -c "ollama serve & pid=$!; sleep 5; ollama pull llama3.1; ollama pull gemma2:2b; ollama pull granite-embedding:278m; wait $pid"
     deploy:
       resources:
