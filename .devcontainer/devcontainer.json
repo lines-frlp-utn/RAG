@@ -15,5 +15,7 @@
                 "vivaxy.vscode-conventional-commits"
             ]
         }
-    }
+    },
+    // Fixes a bug so vscode detects venv in current directory
+    "postCreateCommand": "ln -s /.venv /workspace/chainlit_app/.venv"
 }
