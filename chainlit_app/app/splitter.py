@@ -31,7 +31,7 @@ def split_text_with_langchain(texts, chunk_size=1000, chunk_overlap=200):
     return [chunk for text in texts for chunk in text_splitter.split_text(text)]
 
 
-def split_markdown_text(text) -> list:
+def split_markdown_text(text) -> list[str]:
     headers_to_split_on = [
         ("#", "Header 1"),
         ("##", "Header 2"),
@@ -40,8 +40,9 @@ def split_markdown_text(text) -> list:
         ("#####", "Header 5"),
         # ("######", "Header 6")
     ]
-    markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on)
-    return markdown_splitter.split_text(text)
+    markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on, strip_headers=False)
+    chunks = markdown_splitter.split_text(text)
+    return [chunk.page_content for chunk in chunks]
 
 
 def refine_split_by_similarity(chunks, embeddings, threshold=0.9):

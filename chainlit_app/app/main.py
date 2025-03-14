@@ -21,7 +21,6 @@ def format_docs(docs):
 async def start():
     cl.user_session.set("session_number", 1)
     # cl.user_session.set("memory", ConversationBufferMemory(return_messages=True))
-    cl.user_session.set("aim_run", start_aim_run())
 
     settings = await cl.ChatSettings(
         [
@@ -62,19 +61,23 @@ async def update_settings(settings):
 
 
 @cl.step
-async def vectordb_results_step(query):
+async def vectordb_results_step(query: str):
     settings = cl.user_session.get("settings")
     query_embedding = await cl.make_async(embedding_generator.get_embeddings)([query])
+    query_embedding = query_embedding[0]
     print(f"Query embedding: {query_embedding}")
     results = await cl.make_async(get_context_from_db)(
         collection_name=collection_name,
-        query=query_embedding,
+        query=query,
+        query_embedding=query_embedding,
     )
     cl.context.current_step.output = results
-    context = await context_step(results)
-    return context
+    # context = await context_step(results)
+    # return context
+    return results
 
 
+# REFACTOR milvus logic to here
 @cl.step
 async def context_step(results):
     context = ""
@@ -100,7 +103,7 @@ async def llm_step(query, context, **kwargs):
 async def main(message: cl.Message):
     session_number = cl.user_session.get("session_number")
     settings = cl.user_session.get("settings")
-
+    cl.user_session.set("aim_run", start_aim_run())
     if message.elements:
         file = message.elements[0]
         # msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
@@ -128,7 +131,6 @@ async def main(message: cl.Message):
                 embeddings, chunks
             )
             print(f"Embeddings data: {embeddings_data}")
-            print("haciendo el post")
             result = await cl.make_async(post_embeddings)(
                 collection_name=collection_name, dataWithEmbeddings=embeddings_data
             )

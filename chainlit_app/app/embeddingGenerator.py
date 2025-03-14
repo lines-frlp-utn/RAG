@@ -1,21 +1,19 @@
 import hashlib
 
 import numpy as np
-import pymupdf
 from app.config import conf
-from langchain_openai import OpenAIEmbeddings
+from langchain_ollama import OllamaEmbeddings
 
 # http://<IP_DEL_SERVIDOR>:<PUERTO>/api/embeddings
-remote_service_url = f"{conf.MODEL_URL}:{conf.MODEL_PORT}/api/embeddings"
+remote_service_url = f"{conf.MODEL_URL}:{conf.MODEL_PORT}"
 
 
 class EmbeddingGenerator:
-    def __init__(self, service_url=remote_service_url, model_name="granite-embedding"):
-        self.service_url = service_url
-        self.embedding_model = OpenAIEmbeddings(
-            base_url=service_url,
-            model=model_name,
-            api_key="none",
+    def __init__(self):
+        self.service_url = remote_service_url
+        self.embedding_model = OllamaEmbeddings(
+            model="granite-embedding:278m",
+            base_url=remote_service_url,
         )
 
     def generate_id(self, text):
@@ -23,7 +21,9 @@ class EmbeddingGenerator:
 
     def get_embeddings(self, texts: list[str]):
         try:
-            embeddings = self.embedding_model.embed_documents(texts)
+            embeddings = []
+            for text in texts:
+                embeddings.append(self.embedding_model.embed_query(text))
         except Exception as e:
             print(f"Error al obtener embeddings: {e}")
         return embeddings
