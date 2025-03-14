@@ -157,4 +157,8 @@ def upload(data: EmbeddingData):
 
 @app.post("/get-context")
 def get_context(query_data: QueryData):
-    return get_context_with_filters(query_data)
+    results = get_context_with_filters(query_data)
+    result_context = ""
+    for result in results[0]:
+        result_context += result["entity"]["text"] + "\n"
+    return result_context

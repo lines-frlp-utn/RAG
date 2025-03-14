@@ -33,7 +33,7 @@ services:
     depends_on:
       standalone:
         condition: service_healthy
-    command: ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8006", "--reload"]
+    command: ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8006"]
 
   etcd:
     container_name: milvus-etcd
