@@ -11,9 +11,10 @@ dependencies = [
     "numpy>=1.26.4",
     "pydantic-settings>=2.5.2",
     "pymupdf>=1.24.10",
-    "pymupdf4llm>=0.0.17",
     "requests>=2.32.3",
     "aim>=3.24.0",
     "langchain-core>=0.3.36",
     "langchain-text-splitters>=0.3.6",
+    "pymupdf4llm>=0.0.17",
+    "langchain-ollama>=0.2.3",
 ]
