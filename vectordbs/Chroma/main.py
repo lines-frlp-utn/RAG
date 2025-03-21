@@ -14,7 +14,8 @@ class EmbeddingData(BaseModel):
 
 class QueryData(BaseModel):
     collection_name: str
-    query: list
+    query: str
+    query_embedding: list[float]
 
 
 app = fastapi.FastAPI()
@@ -34,12 +35,12 @@ def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
         print(f"{doc} cargado correctamente...")
 
 
-def get_context_with_filters(collection_name, query):
+def get_context_with_filters(collection_name, query_embedding):
     collection = client.get_collection(
         name=collection_name,
     )
 
-    response = collection.query(query_embeddings=query, n_results=1)
+    response = collection.query(query_embeddings=query_embedding, n_results=1)
 
     print(response)
     return response["documents"]
@@ -63,6 +64,6 @@ def upload(data: EmbeddingData):
 
 @app.post("/get-context")
 def get_context(data: QueryData):
-    query = data.query
+    query_embedding = data.query_embedding
     collection_name = data.collection_name
-    return get_context_with_filters(collection_name, query)
+    return get_context_with_filters(collection_name, query_embedding)
