@@ -11,8 +11,7 @@
                 "ms-python.debugpy",
                 "ms-python.python",
                 "GitHub.copilot",
-                "charliermarsh.ruff",
-                "vivaxy.vscode-conventional-commits"
+                "charliermarsh.ruff"
             ]
         }
     },

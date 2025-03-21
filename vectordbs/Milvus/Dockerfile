@@ -9,4 +9,4 @@ RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
 
 COPY main.py .
 
-CMD ["sh", "-c", "while true; do sleep 30; done"]
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8006"]
