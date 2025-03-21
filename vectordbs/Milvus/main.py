@@ -31,6 +31,12 @@ class QueryData(BaseModel):
     query_embedding: list[float]
 
 
+class RetrieveData(BaseModel):
+    id: str
+    text: str
+    metadata: dict
+
+
 def create_schema():
     schema = MilvusClient.create_schema(
         auto_id=False,

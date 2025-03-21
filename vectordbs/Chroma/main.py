@@ -18,6 +18,12 @@ class QueryData(BaseModel):
     query_embedding: list[float]
 
 
+class RetrieveData(BaseModel):
+    id: str
+    text: str
+    metadata: dict
+
+
 app = fastapi.FastAPI()
 
 client = chromadb.PersistentClient("./database/")
