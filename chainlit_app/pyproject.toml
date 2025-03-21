@@ -5,16 +5,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12.9"
 dependencies = [
-    "chainlit>=1.2.0",
     "langchain-openai>=0.2.1",
     "llama-parse>=0.5.6",
     "numpy>=1.26.4",
     "pydantic-settings>=2.5.2",
     "pymupdf>=1.24.10",
     "requests>=2.32.3",
-    "aim>=3.24.0",
     "langchain-core>=0.3.36",
     "langchain-text-splitters>=0.3.6",
     "pymupdf4llm>=0.0.17",
     "langchain-ollama>=0.2.3",
+    "aim>=3.28.0",
+    "chainlit>=2.4.201",
 ]

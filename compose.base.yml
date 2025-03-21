@@ -2,7 +2,7 @@ services:
 
   ollama:
     container_name: ollama
-    image: ollama/ollama:0.6.0
+    image: ollama/ollama:0.6.2
     volumes:
       - ollama:/root/.ollama
     ports:
@@ -22,7 +22,7 @@ services:
 
   
   aim-server:
-    image: aimstack/aim:3.24.0
+    image: aimstack/aim:3.28.0
     command: server --host 0.0.0.0
     container_name: aim_server
     ports:
@@ -31,7 +31,7 @@ services:
         - aim-volume:/opt/aim
 
   aim-ui:
-    image: aimstack/aim:3.24.0
+    image: aimstack/aim:3.28.0
     command: up --host 0.0.0.0
     container_name: aim_ui
     ports:
