@@ -5,19 +5,16 @@ from pymilvus import (
     CollectionSchema,
     DataType,
     FieldSchema,
+    Function,
+    FunctionType,
     MilvusClient,
     RRFRanker,
 )
-from scipy.sparse import csr_matrix
-from sklearn.feature_extraction.text import TfidfVectorizer
 
 app = fastapi.FastAPI()
 
 # Conexión a Milvus
 client = MilvusClient(uri="http://milvus-standalone:19530")
-
-# Crear el vectorizador TF-IDF
-tfidf_vectorizer = TfidfVectorizer()
 
 
 class EmbeddingData(BaseModel):
@@ -37,14 +34,23 @@ def create_schema():
         enable_dynamic_field=True,
     )
     schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True)
-    schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=4000)
+    schema.add_field(
+        field_name="text", datatype=DataType.VARCHAR, max_length=4000, enable_analyzer=True
+    )
     schema.add_field(field_name="sparse", datatype=DataType.SPARSE_FLOAT_VECTOR)
     schema.add_field(field_name="dense", datatype=DataType.FLOAT_VECTOR, dim=768)
+
+    bm25_function = Function(
+        name="text_bm25_emb",  # Function name
+        input_field_names=["text"],  # Name of the VARCHAR field containing raw text data
+        output_field_names=[
+            "sparse"
+        ],  # Name of the SPARSE_FLOAT_VECTOR field reserved to store generated embeddings
+        function_type=FunctionType.BM25,
+    )
+
+    schema.add_function(bm25_function)
     return schema
-
-
-def sparse_matrix_to_dict(matrix: csr_matrix) -> dict:
-    return {int(index): float(value) for index, value in zip(matrix.indices, matrix.data)}
 
 
 def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
@@ -54,20 +60,13 @@ def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
         client.drop_collection(collection_name=collection_name)
         print(f"Colección borrada: {collection_name}")
 
-    ## Parseamos los datos
-    texts = [item["text"] for item in dataWithEmbeddings]
-
-    # Aprende el vocabulario y genera embeddings TF-IDF (MATRIZ CSR)
-    tfidf_matrix = tfidf_vectorizer.fit_transform(texts)
-    print("Embeddings TF-IDF generados")
-
     uploadData = []
     for i, item in enumerate(dataWithEmbeddings):
         data = {
             "id": item["id"],
             "text": item["text"],
             "dense": item["vector"],
-            "sparse": sparse_matrix_to_dict(tfidf_matrix[i]),
+            # "sparse" is done automatically by milvus
         }
         uploadData.append(data)
     print(uploadData[0])
@@ -85,13 +84,8 @@ def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
         params={"nlist": 128},
     )
     index_params.add_index(
-        field_name="sparse",
-        index_name="sparse_index",
-        index_type="SPARSE_INVERTED_INDEX",
-        metric_type="IP",
-        params={"inverted_index_algo": "DAAT_MAXSCORE"},
+        field_name="sparse", index_name="sparse_index", index_type="AUTOINDEX", metric_type="BM25"
     )
-
     ## Creamos la colección
     client.create_collection(
         collection_name=collection_name, schema=schema, index_params=index_params
@@ -117,16 +111,10 @@ def get_context_with_filters(query_data: QueryData):
     request_1 = AnnSearchRequest(**dense_param)
 
     ## Campo sparse
-    # Convertir la query a embedding TF-IDF
-    query_text = query_data.query
-    query_tfidf = tfidf_vectorizer.transform([query_text])
-    sparse_query_vector = sparse_matrix_to_dict(query_tfidf)
-    print(sparse_query_vector)
-
     sparse_param = {
-        "data": [sparse_query_vector],
+        "data": [query_data.query],
         "anns_field": "sparse",
-        "param": {"metric_type": "IP", "params": {}},
+        "param": {"params": {}},
         "limit": 2,
     }
     request_2 = AnnSearchRequest(**sparse_param)
