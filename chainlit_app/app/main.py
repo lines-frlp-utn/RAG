@@ -21,7 +21,7 @@ def format_docs(docs):
 async def start():
     cl.user_session.set("session_number", 1)
     # cl.user_session.set("memory", ConversationBufferMemory(return_messages=True))
-
+    cl.user_session.set("aim_run", start_aim_run())
     settings = await cl.ChatSettings(
         [
             Select(
@@ -103,7 +103,6 @@ async def llm_step(query, context, **kwargs):
 async def main(message: cl.Message):
     session_number = cl.user_session.get("session_number")
     settings = cl.user_session.get("settings")
-    cl.user_session.set("aim_run", start_aim_run())
     if message.elements:
         file = message.elements[0]
         # msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
@@ -130,7 +129,7 @@ async def main(message: cl.Message):
             embeddings_data = await cl.make_async(embedding_generator.format_for_database)(
                 embeddings, chunks
             )
-            print(f"Embeddings data: {embeddings_data}")
+            print("Embeddings formateados")
             result = await cl.make_async(post_embeddings)(
                 collection_name=collection_name, dataWithEmbeddings=embeddings_data
             )

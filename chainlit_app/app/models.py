@@ -29,7 +29,8 @@ def get_conversational_answer(query, db_context, chat_history, aim_run, **kwargs
     """
 
     # Insertar el system prompt al inicio de la conversación
-    chat_history.insert(0, {"role": "system", "content": system_prompt})
+    if len(chat_history) < 2:
+        chat_history.insert(0, {"role": "system", "content": system_prompt})
 
     # Imprimir el prompt para depuración
     print(f"system prompt: {system_prompt}")

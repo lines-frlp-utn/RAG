@@ -11,9 +11,10 @@
                 "ms-python.debugpy",
                 "ms-python.python",
                 "GitHub.copilot",
-                "charliermarsh.ruff",
-                "vivaxy.vscode-conventional-commits"
+                "charliermarsh.ruff"
             ]
         }
-    }
+    },
+    // Fixes a bug so vscode detects venv in current directory
+    "postCreateCommand": "ln -s /.venv /workspace/chainlit_app/.venv"
 }

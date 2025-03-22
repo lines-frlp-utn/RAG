@@ -16,6 +16,3 @@ RUN  --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync
-
-# Fixes a bug so vscode detects venv in current directory
-RUN ln -s /.venv /workspace/chainlit_app/.venv
