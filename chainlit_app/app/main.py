@@ -1,10 +1,10 @@
 import chainlit as cl
-from app.aim_tracker import start_aim_run, end_aim_run
+from app.aim_tracker import end_aim_run, start_aim_run
 from app.databases import get_context_from_db, post_embeddings
 from app.embeddingGenerator import EmbeddingGenerator
-from app.pdfExtractor import extract_text_from_pdf
-from app.splitter import split_text_with_langchain, refine_split_by_similarity
 from app.models import get_conversational_answer
+from app.pdfExtractor import extract_text_from_pdf
+from app.splitter import split_markdown_text
 from chainlit.input_widget import Select, Slider
 from langchain.memory import ConversationBufferMemory
 from chainlit.types import ThreadDict
@@ -12,6 +12,7 @@ from app.auth import create_user, user_exists, UserExistsDTOResponse, Role
 
 embedding_generator = EmbeddingGenerator()
 collection_name = "prueba_lines"
+
 
 def format_docs(docs):
     return "\n\n".join([d.page_content for d in docs])
@@ -46,7 +47,6 @@ async def start():
     app_user = cl.user_session.get("user")
     cl.user_session.set("memory", ConversationBufferMemory(return_messages=True))
     cl.user_session.set("aim_run", start_aim_run())
-
     settings = await cl.ChatSettings(
         [
             Select(
@@ -105,18 +105,23 @@ async def resume(thread: ThreadDict):
 
 
 @cl.step
-async def vectordb_results_step(query):
+async def vectordb_results_step(query: str):
     settings = cl.user_session.get("settings")
-    query_embedding = await cl.make_async(embedding_generator.format_for_database)([query])
+    query_embedding = await cl.make_async(embedding_generator.get_embeddings)([query])
+    query_embedding = query_embedding[0]
     print(f"Query embedding: {query_embedding}")
     results = await cl.make_async(get_context_from_db)(
         collection_name=collection_name,
-        query=query_embedding,
+        query=query,
+        query_embedding=query_embedding,
     )
     cl.context.current_step.output = results
-    context = await context_step(results)
-    return context
+    # context = await context_step(results)
+    # return context
+    return results
 
+
+# REFACTOR milvus logic to here
 @cl.step
 async def context_step(results):
     context = ""
@@ -126,13 +131,17 @@ async def context_step(results):
     cl.context.current_step.output = context
     return context
 
+
 @cl.step
 async def llm_step(query, context, **kwargs):
     chat_context = cl.chat_context.to_openai()
     print(f"Chat context: {chat_context}")
     aim_run = cl.user_session.get("aim_run")
-    respuesta = await cl.make_async(get_conversational_answer)(query, context, chat_context, aim_run, **kwargs)
+    respuesta = await cl.make_async(get_conversational_answer)(
+        query, context, chat_context, aim_run, **kwargs
+    )
     return respuesta
+
 
 @cl.on_message
 async def main(message: cl.Message):
@@ -148,25 +157,26 @@ async def main(message: cl.Message):
         try:
             # Extraer el texto del PDF
             print(f"Extrayendo texto de `{file.name}`...")
-            texts = extract_text_from_pdf(file.path)
-            
+            text = extract_text_from_pdf(file.path)
+
             # Splittear el texto en chunks semánticos
             print(f"Splitteando texto de `{file.name}`...")
-            chunks = split_text_with_langchain(texts)
-            
+            chunks = split_markdown_text(text)
+
             # Generar los embeddings de los chunks
             print(f"Generando embeddings de `{file.name}`...")
             embeddings = await cl.make_async(embedding_generator.get_embeddings)(chunks)
 
             # Refinar los chunks según la similitud coseno
-            print(f"Refinando chunks de `{file.name}`...")
-            refined_chunks = refine_split_by_similarity(chunks, embeddings)
+            # print(f"Refinando chunks de `{file.name}`...")
+            # refined_chunks = refine_split_by_similarity(chunks, embeddings)
 
             # Formatear y cargar los embeddings en la base de datos
             print(f"Formateando embeddings de `{file.name}`...")
-            embeddings_data = await cl.make_async(embedding_generator.format_for_database)(refined_chunks)
-            print(f"Embeddings data: {embeddings_data}")
-            print("haciendo el post")
+            embeddings_data = await cl.make_async(embedding_generator.format_for_database)(
+                embeddings, chunks
+            )
+            print("Embeddings formateados")
             result = await cl.make_async(post_embeddings)(
                 collection_name=collection_name, dataWithEmbeddings=embeddings_data
             )
@@ -184,24 +194,24 @@ async def main(message: cl.Message):
     kwargs = {
         "model": settings["model"],
         "temperature": settings["temperature"],
-        "frequency_penalty": settings["frequency_penalty"]
+        "frequency_penalty": settings["frequency_penalty"],
     }
-    respuesta = await llm_step(
-        query=query, context=context, 
-        **kwargs
-    )
+    respuesta = await llm_step(query=query, context=context, **kwargs)
     msg.content = f"{respuesta}"
 
     await msg.update()  # actualizamos el mensaje con los nuevos datos
-    
+
     memory.chat_memory.add_user_message(message.content)
     memory.chat_memory.add_ai_message(msg.content)
+
 
 @cl.on_chat_end
 async def close():
     aim_run = cl.user_session.get("aim_run")
     end_aim_run(aim_run)
 
+
 if __name__ == "__main__":
     from chainlit.cli import run_chainlit
+
     run_chainlit(__file__)

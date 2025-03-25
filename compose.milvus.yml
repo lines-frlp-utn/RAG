@@ -4,6 +4,7 @@ include:
 services:
 
   app:
+    container_name: prod-chainlit
     build:
       context: chainlit_app/
       dockerfile: Dockerfile
@@ -12,15 +13,15 @@ services:
     env_file:
       - .env
     environment:
-      MODEL_URL: ${MODEL_URL:-http://ollama}
-      MODEL_PORT: ${MODEL_PORT:-11434}
-      DB_URL: http://db-milvus
-      DB_PORT: 8006
-      USERS_API_URL: http://users_db
-      USERS_API_PORT: 8009
-      LITERAL_API_KEY: ${LITERAL_API_KEY}
-      CHAINLIT_AUTH_SECRET: ${CHAINLIT_AUTH_SECRET}
-      LLAMA_PARSE_API_KEY: ${LLAMA_PARSE_API_KEY}
+      - MODEL_URL=${MODEL_URL:-http://ollama}
+      - MODEL_PORT=${MODEL_PORT:-11434}
+      - DB_URL=http://db-milvus
+      - DB_PORT=8006
+      - LLAMA_PARSE_API_KEY=${LLAMA_PARSE_API_KEY}
+      - USERS_API_URL= http://users_db
+      - USERS_API_PORT= 8009
+      - LITERAL_API_KEY= ${LITERAL_API_KEY}
+      - CHAINLIT_AUTH_SECRET= ${CHAINLIT_AUTH_SECRET}
     volumes:
       - rag-volume:/chainlit_app/database
     depends_on:
@@ -36,10 +37,11 @@ services:
     depends_on:
       standalone:
         condition: service_healthy
+    command: ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8006"]
 
   etcd:
     container_name: milvus-etcd
-    image: quay.io/coreos/etcd:v3.5.5
+    image: quay.io/coreos/etcd:v3.5.18
     environment:
       - ETCD_AUTO_COMPACTION_MODE=revision
       - ETCD_AUTO_COMPACTION_RETENTION=1000
@@ -72,9 +74,10 @@ services:
       timeout: 20s
       retries: 3
 
+
   standalone:
     container_name: milvus-standalone
-    image: milvusdb/milvus:v2.4.10
+    image: milvusdb/milvus:v2.5.6
     command: ["milvus", "run", "standalone"]
     security_opt:
     - seccomp:unconfined
@@ -95,13 +98,16 @@ services:
     depends_on:
       - "etcd"
       - "minio"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+  attu:
+    image: zilliz/attu:v2.5
+    container_name: attu
+    restart: always
+    ports:
+      - "8000:3000"
+    environment:
+      MILVUS_URL: "http://milvus-standalone:19530"
+    depends_on:
+      - standalone
 
   mysql_db:
     image: mysql:8.0

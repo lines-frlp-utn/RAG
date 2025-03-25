@@ -1,6 +1,6 @@
 {
     "name": "Chainlit dev container",
-    "dockerComposeFile": ["../compose.ollama.chroma.yml", "compose.ollama.extend.yml"],
+    "dockerComposeFile": ["../compose.milvus.yml", "compose.extend.yml"],
 
     "service": "app",
     "workspaceFolder": "/workspace/chainlit_app",
@@ -11,11 +11,10 @@
                 "ms-python.debugpy",
                 "ms-python.python",
                 "GitHub.copilot",
-                "charliermarsh.ruff",
-                "vivaxy.vscode-conventional-commits"
+                "charliermarsh.ruff"
             ]
         }
     },
-    "postCreateCommand": "uv venv",
-    "postStartCommand": "uv sync"
+    // Fixes a bug so vscode detects venv in current directory
+    "postCreateCommand": "ln -s /.venv /workspace/chainlit_app/.venv"
 }

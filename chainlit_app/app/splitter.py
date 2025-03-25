@@ -1,11 +1,18 @@
 import numpy as np
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from sklearn.metrics.pairwise import cosine_similarity
+from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
+
+
+def cosine_similarity(vec1, vec2):
+    dot_product = np.dot(vec1, vec2)
+    norm_vec1 = np.linalg.norm(vec1)
+    norm_vec2 = np.linalg.norm(vec2)
+    return dot_product / (norm_vec1 * norm_vec2)
+
 
 def split_text_with_langchain(texts, chunk_size=1000, chunk_overlap=200):
     """
     Divide el texto en fragmentos utilizando RecursiveCharacterTextSplitter de LangChain.
-    
+
     Args:
         texts (list): Lista de textos a dividir.
         chunk_size (int): Tamaño máximo de cada fragmento.
@@ -15,16 +22,46 @@ def split_text_with_langchain(texts, chunk_size=1000, chunk_overlap=200):
         list: Lista de fragmentos de texto.
     """
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size, 
+        chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
-        separators=[".", "!", "?", "\n\n", "\n", "\t", ",", ";", ":"]
+        separators=[".", "!", "?", "\n\n", "\n", "\t", ",", ";", ":"],
     )
-    
+
     # Usar comprensión de listas para dividir texto
     return [chunk for text in texts for chunk in text_splitter.split_text(text)]
 
-def refine_split_by_similarity(chunks, embeddings, threshold=0.7):
 
+def split_markdown_text(text, max_length=4000, chunk_overlap=200) -> list[str]:
+    headers_to_split_on = [
+        ("#", "Header 1"),
+        ("##", "Header 2"),
+        ("###", "Header 3"),
+        ("####", "Header 4"),
+        ("#####", "Header 5"),
+        # ("######", "Header 6")
+    ]
+    markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on, strip_headers=False)
+    chunks = markdown_splitter.split_text(text)
+    markdown_chunks = [chunk.page_content for chunk in chunks]
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=max_length,
+        chunk_overlap=chunk_overlap,
+        length_function=len,
+    )
+
+    final_chunks = []
+    for chunk in markdown_chunks:
+        if len(chunk) > max_length:
+            smaller_chunks = text_splitter.split_text(chunk)
+            final_chunks.extend(smaller_chunks)
+        else:
+            final_chunks.append(chunk)
+
+    return final_chunks
+
+
+def refine_split_by_similarity(chunks, embeddings, threshold=0.9):
     """
     Refina y combina fragmentos de texto basándose en su similitud semántica utilizando
     las embeddings y un umbral específico.
@@ -32,7 +69,7 @@ def refine_split_by_similarity(chunks, embeddings, threshold=0.7):
     Args:
         chunks (list): Lista de fragmentos de texto a refinar.
         embeddings (ndarray): Matriz de embeddings correspondiente a los fragmentos de texto.
-        threshold (float): Umbral de similitud para combinar fragmentos similares. 
+        threshold (float): Umbral de similitud para combinar fragmentos similares.
                            Por defecto es 0.7.
 
     Returns:
@@ -42,9 +79,9 @@ def refine_split_by_similarity(chunks, embeddings, threshold=0.7):
     similarities = cosine_similarity(embeddings)
     used = np.zeros(len(chunks), dtype=bool)
     refined_chunks = []
-    
+
     precomputed_similarities = {}
-    #llenar el diccionario con las similitudes. indice : similitud
+    # llenar el diccionario con las similitudes. indice : similitud
     for i in range(len(chunks)):
         precomputed_similarities[i] = np.where(similarities[i] >= threshold)[0]
 
@@ -52,18 +89,17 @@ def refine_split_by_similarity(chunks, embeddings, threshold=0.7):
         if not used[i]:
             temp_chunk = [chunks[i]]
             used[i] = True
-            
+
             # Encuentra índices similares que no han sido utilizados
             similar_indices = precomputed_similarities[i][~used[precomputed_similarities[i]]]
-            
+
             # Combina los chunks similares
             for j in similar_indices:
                 if not used[j]:  # Solo combina si aún no se ha utilizado
                     temp_chunk.append(chunks[j])
                     used[j] = True
-            
+
             # Agrega el nuevo chunk combinado
             refined_chunks.append(" \n\n".join(temp_chunk))
-    
-    return refined_chunks
 
+    return refined_chunks

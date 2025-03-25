@@ -4,6 +4,7 @@ include:
 services:
 
   app:
+    container_name: prod-chainlit
     build:
       context: chainlit_app/
       dockerfile: Dockerfile
