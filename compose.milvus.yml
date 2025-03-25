@@ -94,3 +94,13 @@ services:
     depends_on:
       - "etcd"
       - "minio"
+  attu:
+    image: zilliz/attu:v2.5
+    container_name: attu
+    restart: always
+    ports:
+      - "8000:3000"
+    environment:
+      MILVUS_URL: "http://milvus-standalone:19530"
+    depends_on:
+      - standalone
