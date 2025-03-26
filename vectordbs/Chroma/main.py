@@ -42,14 +42,66 @@ def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
 
 
 def get_context_with_filters(collection_name, query_embedding):
-    collection = client.get_collection(
-        name=collection_name,
-    )
-
-    response = collection.query(query_embeddings=query_embedding, n_results=1)
-
-    print(response)
-    return response["documents"]
+    # print("\n--- ENTRANDO A get_context_with_filters ---")
+    # print(f"Colección: {collection_name}")
+    # print(f"Tipo de embedding: {type(query_embedding)}")
+    # print(f"Longitud embedding: {len(query_embedding) if hasattr(query_embedding, '__len__') else 'N/A'}")
+    try:
+        collection = client.get_collection(name=collection_name)
+        
+        # Consulta con parámetros adicionales para debug
+        response = collection.query(
+            query_embeddings=[query_embedding],
+            n_results=2,
+            include=["documents", "metadatas", "distances"]  # Incluir distancias para debug
+        )
+        
+        # Debug detallado
+        # print("\n--- DEBUG ChromaDB Response ---")
+        # print("Total results:", len(response['ids'][0]))
+        # print("IDs:", response['ids'][0])
+        # print("Documents:", response['documents'][0])
+        # print("Metadatas:", response['metadatas'][0])
+        # print("Distances:", response.get('distances', [[]])[0])
+        # print("-----------------------------\n")
+        
+        # Procesamiento seguro de resultados
+        documents = response.get("documents", [[]])[0] or ["[Documento sin texto]"]
+        ids = response.get("ids", [[]])[0] or ["unknown"]
+        metadatas = response.get("metadatas", [[]])[0] or [{}]
+        
+        retrieve_data_list = []
+        for doc_id, doc_text, meta in zip(ids, documents, metadatas):
+            # Validación exhaustiva del texto
+            if not doc_text or not str(doc_text).strip():
+                print(f"¡Documento vacío encontrado! ID: {doc_id}")
+                doc_text = "[Contenido no disponible]"
+            
+            retrieve_data_list.append(
+                RetrieveData(
+                    id=str(doc_id),
+                    text=str(doc_text).strip(),
+                    metadata=meta if isinstance(meta, dict) else {}
+                )
+            )
+        
+        return retrieve_data_list
+    
+    except Exception as e:
+        # print(f"\n--- ERROR en get_context_with_filters ---")
+        # print(f"Collection: {collection_name}")
+        # print(f"Query embedding: {query_embedding[:3]}...")  # Mostrar solo parte del embedding
+        # print(f"Error: {str(e)}")
+        # print("------------------------------------\n")
+        
+        # Retornar estructura vacía pero válida
+        return [
+            RetrieveData(
+                id="error",
+                text="Error recuperando contexto",
+                metadata={"error": str(e)}
+            )
+        ]
 
 
 @app.exception_handler(RequestValidationError)
