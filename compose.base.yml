@@ -12,6 +12,11 @@ services:
       - CUDA_VISIBLE_DEVICES=0
       - OLLAMA_CONTEXT_LENGTH=8192
     entrypoint: bash -c "ollama serve & pid=$!; sleep 5; ollama pull llama3.1; ollama pull gemma2:2b; ollama pull granite-embedding:278m; wait $pid"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.ollama.loadbalancer.server.port=11434"
+      - "traefik.http.routers.ollama-http.rule=PathRegexp(`^/(api|v1).*`)" # Route user requests matching /api or /v1
+      - "traefik.http.services.ollama.loadbalancer.passhostheader=false"
     deploy:
       resources:
         reservations:
@@ -38,6 +43,50 @@ services:
         - 43800:43800
     volumes:
         - aim-volume:/opt/aim
+
+  chainlit-app:
+    container_name: prod-chainlit
+    build:
+      context: chainlit_app/
+      dockerfile: Dockerfile
+    ports:
+      - 80:80
+    env_file:
+      - .env
+    environment:
+      - MODEL_URL=${MODEL_URL:-http://ollama}
+      - MODEL_PORT=${MODEL_PORT:-11434}
+      - DB_URL=http://vector-db
+      - DB_PORT=8006
+      - LLAMA_PARSE_API_KEY=${LLAMA_PARSE_API_KEY:-""}
+    volumes:
+      - rag-volume:/chainlit_app/database
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.chainlit-router.entrypoints=web"
+    depends_on:
+      - aim-server
+
+  traefik:
+    image: traefik:v3.3
+    container_name: traefik
+    command:
+      - "--api.dashboard=true"
+      - "--log.level=DEBUG"
+      - "--accesslog=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:8005"
+      - "--entrypoints.websecure.address=:443"
+    ports:
+      - "8005:8005"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - traefik.enable=true
+      # - "traefik.http.routers.traefik.middlewares=auth"
+      # - "traefik.http.middlewares.auth.basicauth.users=myuser:$$apr1$$HtC6EB1y$$Xn8dAvzj5l2FGFXlrT2Rl1"
 
 networks:
   default:
