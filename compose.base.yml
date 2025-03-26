@@ -17,6 +17,7 @@ services:
       - "traefik.http.services.ollama.loadbalancer.server.port=11434"
       - "traefik.http.routers.ollama-http.rule=PathRegexp(`^/(api|v1).*`)" # Route user requests matching /api or /v1
       - "traefik.http.services.ollama.loadbalancer.passhostheader=false"
+
     deploy:
       resources:
         reservations:
@@ -64,6 +65,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.chainlit-router.entrypoints=web"
+      - "traefik.http.routers.chainlit-router.rule=PathPrefix(`/`)"
+      - "traefik.http.services.chainlit-router.loadbalancer.server.port=80"
     depends_on:
       - aim-server
 
