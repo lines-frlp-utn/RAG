@@ -130,7 +130,7 @@ def get_context_with_filters(query_data: QueryData):
         collection_name=query_data.collection_name,
         reqs=reqs,
         ranker=ranker,
-        limit=2,
+        limit=5,
         output_fields=["text"],
     )
     print(f"Resultado: {res}")
