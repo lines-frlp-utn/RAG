@@ -1,6 +1,6 @@
 {
     "name": "Chainlit dev container",
-    "dockerComposeFile": ["../compose.milvus.yml", "compose.extend.yml"],
+    "dockerComposeFile": ["../compose.base.yml", "compose.extend.yml"],
 
     "service": "chainlit-app",
     "workspaceFolder": "/workspace/",
@@ -16,5 +16,6 @@
         }
     },
     // Fixes a bug so vscode detects venv in current directory
-    "postCreateCommand": "ln -s /.venv /workspace/chainlit_app/.venv"
+    "postCreateCommand": "sh /workspace/.devcontainer/post-create.sh"
+
 }

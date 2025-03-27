@@ -9,7 +9,7 @@
             "type": "debugpy",
             "request": "launch",
             "module": "chainlit",
-            "python": ".venv/bin/python",
+            "python": "/.venv/bin/python",
             "cwd": "/workspace/chainlit_app/",
             "args": [
                 "run", "--host", "0.0.0.0", "--port", "80", "app/main.py"
@@ -20,8 +20,19 @@
             "type": "debugpy",
             "request": "launch",
             "module": "uvicorn",
-            "python": ".venv/bin/python",
+            "python": "/.venv/bin/python",
             "cwd": "/workspace/vectordbs/Milvus/",
+            "args": [
+                "--host", "0.0.0.0", "--port", "8090", "main:app"
+            ],
+        },
+        {
+            "name": "chroma",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "python": "/.venv/bin/python",
+            "cwd": "/workspace/vectordbs/Chroma/",
             "args": [
                 "--host", "0.0.0.0", "--port", "8090", "main:app"
             ],
@@ -32,6 +43,11 @@
       "name": "chainlit + milvus",
       "configurations": ["Chainlit", "milvus"],
       "stopAll": true
+    },
+    {
+      "name": "chainlit + chroma",
+      "configurations": ["Chainlit", "chroma"],
+      "stopAll": true,
     }
   ]
 }
