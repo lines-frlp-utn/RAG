@@ -29,7 +29,7 @@ async def start():
                 label="model",
                 values=[
                     "llama3.1",
-                    "gemma2:2b",
+                    "gemma3:1b",
                 ],
                 initial_index=0,
             ),
