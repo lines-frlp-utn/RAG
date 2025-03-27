@@ -3,28 +3,9 @@ include:
 
 services:
 
-  app:
-    container_name: prod-chainlit
-    build:
-      context: chainlit_app/
-      dockerfile: Dockerfile
-    ports:
-      - 8005:8005
-    env_file:
-      - .env
-    environment:
-      - MODEL_URL=${MODEL_URL:-http://ollama}
-      - MODEL_PORT=${MODEL_PORT:-11434}
-      - DB_URL=http://db-milvus
-      - DB_PORT=8006
-      - LLAMA_PARSE_API_KEY=${LLAMA_PARSE_API_KEY:-""}
-    volumes:
-      - rag-volume:/chainlit_app/database
-    depends_on:
-      - aim-server
-
-  db-milvus:
+  vector-db:
     image: milvus
+    container_name: db-milvus
     build:
       context: vectordbs/Milvus
       dockerfile: Dockerfile
@@ -70,10 +51,9 @@ services:
       timeout: 20s
       retries: 3
 
-
   standalone:
     container_name: milvus-standalone
-    image: milvusdb/milvus:v2.5.6
+    image: milvusdb/milvus:v2.5.7
     command: ["milvus", "run", "standalone"]
     security_opt:
     - seccomp:unconfined
@@ -94,3 +74,14 @@ services:
     depends_on:
       - "etcd"
       - "minio"
+
+  attu:
+    image: zilliz/attu:v2.5
+    container_name: attu
+    restart: always
+    ports:
+      - "8001:3000"
+    environment:
+      MILVUS_URL: "http://milvus-standalone:19530"
+    depends_on:
+      - standalone

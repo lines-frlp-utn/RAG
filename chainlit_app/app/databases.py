@@ -26,6 +26,7 @@ def get_context_from_db(collection_name, query, query_embedding):
     )
     if response.status_code != 200:
         print(f"Error: {response.status_code} - {response.text}")
+        raise Exception(f"Error: {response.status_code} - {response.text}")
     else:
         print("Request successful")
-    return response.json()
+        return response.json()

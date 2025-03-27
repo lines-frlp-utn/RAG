@@ -29,13 +29,19 @@ def get_conversational_answer(query, db_context, chat_history, aim_run, safe_con
     Para responder la consulta podes ayudarte con la informacion de contexto:
     {format_db_context(db_context)}
     """
-    
+
+    # Reemplazar el system prompt al inicio de la conversación con context actualizado
+    chat_history = [msg for msg in chat_history if msg["role"] != "system"]
+    chat_history.insert(0, {"role": "system", "content": system_prompt})
+    # Eliminar el último elemento del historial de chat, mensaje de asistente vacio
+    if chat_history[-1]["role"] == "assistant":
+        chat_history.pop()
+    # Imprimir el prompt para depuración
+    print(f"system prompt: {system_prompt}")
     track_text(aim_run, "system_prompt", system_prompt)
     track_text(aim_run, "db_context_section", tracking_context)  # Usar el contexto seguro para tracking
     track_text(aim_run, "user_prompt", query)
 
-    chat_history.insert(0, {"role": "system", "content": system_prompt})
-    print(f"Prompt completo: {chat_history}")
 
     answer = llm.invoke(chat_history, **kwargs)
     track_text(aim_run, "answer", answer.content)
