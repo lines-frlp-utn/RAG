@@ -1,0 +1,10 @@
+aim==3.28.0 
+chainlit==2.4.302
+langchain-core==0.3.41
+langchain-openai==0.3.7
+langchain-text-splitters==0.3.6
+llama-parse==0.6.2
+numpy==2.2.3
+pydantic-settings==2.8.1
+pymupdf4llm==0.0.17
+requests==2.32.3
