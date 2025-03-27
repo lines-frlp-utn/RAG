@@ -28,10 +28,12 @@ def get_conversational_answer(query, db_context, chat_history, aim_run, **kwargs
     {db_context}
     """
 
-    # Insertar el system prompt al inicio de la conversación
+    # Reemplazar el system prompt al inicio de la conversación con context actualizado
     chat_history = [msg for msg in chat_history if msg["role"] != "system"]
-    chat_history.append({"role": "system", "content": system_prompt})
-
+    chat_history.insert(0, {"role": "system", "content": system_prompt})
+    # Eliminar el último elemento del historial de chat, mensaje de asistente vacio
+    if chat_history[-1]["role"] == "assistant":
+        chat_history.pop()
     # Imprimir el prompt para depuración
     print(f"system prompt: {system_prompt}")
     track_text(aim_run, "system_prompt", system_prompt)
