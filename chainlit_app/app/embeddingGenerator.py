@@ -2,7 +2,7 @@ import hashlib
 
 import numpy as np
 from app.config import conf
-from langchain_ollama import OllamaEmbeddings
+from openai import OpenAI
 
 # http://<IP_DEL_SERVIDOR>:<PUERTO>/api/embeddings
 remote_service_url = f"{conf.MODEL_URL}:{conf.MODEL_PORT}"
@@ -11,9 +11,10 @@ remote_service_url = f"{conf.MODEL_URL}:{conf.MODEL_PORT}"
 class EmbeddingGenerator:
     def __init__(self):
         self.service_url = remote_service_url
-        self.embedding_model = OllamaEmbeddings(
+        self.embedding_model = OpenAI(
             model="granite-embedding:278m",
             base_url=remote_service_url,
+            api_key="ollama",
         )
 
     def generate_id(self, text):
@@ -21,12 +22,14 @@ class EmbeddingGenerator:
 
     def get_embeddings(self, texts: list[str]):
         try:
-            embeddings = []
-            for text in texts:
-                embeddings.append(self.embedding_model.embed_query(text))
+            embeddings = self.embedding_model.embeddings.create(texts)
+            transformed_embeddings = [
+                embedding_object.embedding for embedding_object in embeddings.data
+            ]
         except Exception as e:
             print(f"Error al obtener embeddings: {e}")
-        return embeddings
+            raise e
+        return transformed_embeddings
 
     def format_for_database(self, embeddings: list[list[float]], chunks: list[str]) -> list[dict]:
         result = []
