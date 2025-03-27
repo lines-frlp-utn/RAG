@@ -2,8 +2,8 @@
     "name": "Chainlit dev container",
     "dockerComposeFile": ["../compose.milvus.yml", "compose.extend.yml"],
 
-    "service": "app",
-    "workspaceFolder": "/workspace/chainlit_app",
+    "service": "chainlit-app",
+    "workspaceFolder": "/workspace/",
     "shutdownAction": "stopCompose",
     "customizations": {
         "vscode": {

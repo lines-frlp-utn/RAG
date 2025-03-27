@@ -1,5 +1,5 @@
 services:
-  app:
+  chainlit-app:
     container_name: dev-container-chainlit
     build:
       context: chainlit_app/
@@ -14,6 +14,11 @@ services:
     #   - SYS_PTRACE
     # security_opt:
     #   - seccomp:unconfined
+    environment:
+      - MODEL_URL=https://desaialines.frlp.utn.edu.ar
+      - MODEL_PORT=443
+      - DB_URL=http://localhost
+      - DB_PORT=8090
 
     # Overrides default command so things don't shut down after the process ends.
     command: ["sh", "-c", "while :; do sleep 2073600; done"]
