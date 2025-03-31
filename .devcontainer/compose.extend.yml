@@ -1,8 +1,8 @@
 services:
-  chainlit-app:
+  dev-chainlit-app:
     container_name: dev-container-chainlit
     build:
-      context: chainlit_app/
+      context: .devcontainer/
       dockerfile: dev.Dockerfile
     volumes:
       # Mounts the project folder to '/workspace'. While this file is in .devcontainer,

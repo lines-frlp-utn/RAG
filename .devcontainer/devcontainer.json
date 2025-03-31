@@ -1,8 +1,9 @@
 {
     "name": "Chainlit dev container",
-    "dockerComposeFile": ["../compose.base.yml", "compose.extend.yml"],
+    "dockerComposeFile": ["../compose.milvus.yml", "compose.extend.yml"],
 
-    "service": "chainlit-app",
+    "service": "dev-chainlit-app",
+    "runServices": ["dev-chainlit-app", "aim-server", "aim-ui", "etcd", "minio", "standalone", "attu"],
     "workspaceFolder": "/workspace/",
     "shutdownAction": "stopCompose",
     "customizations": {
