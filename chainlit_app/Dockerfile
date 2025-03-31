@@ -6,7 +6,6 @@ WORKDIR /code
 # Mount UV and install dependencies
 RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv export --no-dev  > requirements.txt && \
     uv pip install --system -r requirements.txt

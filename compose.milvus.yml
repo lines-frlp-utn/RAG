@@ -18,10 +18,10 @@ services:
       - DB_URL=http://db-milvus
       - DB_PORT=8006
       - LLAMA_PARSE_API_KEY=${LLAMA_PARSE_API_KEY}
-      - USERS_API_URL= http://users_db
-      - USERS_API_PORT= 8009
-      - LITERAL_API_KEY= ${LITERAL_API_KEY}
-      - CHAINLIT_AUTH_SECRET= ${CHAINLIT_AUTH_SECRET}
+      - USERS_API_URL=http://users_db
+      - USERS_API_PORT=8009
+      - LITERAL_API_KEY=${LITERAL_API_KEY}
+      - CHAINLIT_AUTH_SECRET=${CHAINLIT_AUTH_SECRET}
     volumes:
       - rag-volume:/chainlit_app/database
     depends_on:
