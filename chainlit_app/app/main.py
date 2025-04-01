@@ -71,22 +71,42 @@ async def vectordb_results_step(query: str):
         query=query,
         query_embedding=query_embedding,
     )
-    cl.context.current_step.output = results
-    # context = await context_step(results)
-    # return context
-    return results
-
-
-# REFACTOR milvus logic to here
-@cl.step
-async def context_step(results):
-    context = ""
-    for doc in results:
-        context = f"{context} \n {doc}"
-
-    cl.context.current_step.output = context
+    context = await context_step(results)
     return context
 
+
+@cl.step
+async def context_step(results):
+    """Muestra resultados de forma consistente para cualquier vector store"""
+    if not results:
+        return "No se recibieron resultados"
+    
+    # Normalizar a lista
+    docs = [results] if isinstance(results, dict) else results
+    
+    context_parts = []
+    for doc in docs:
+        
+        doc_id = doc.get('id', 'N/A')
+        text = doc.get('text', '[Contenido no disponible]')
+        
+        # Acceder a distancia anidada
+        search_meta = doc.get('metadata', {}).get('search_metadata', {})
+        distance = search_meta.get('distance', 'N/A')
+        
+        # Construir representación
+        doc_str = f"""
+        📄 ID: {doc_id}
+        📊 Distancia: {distance}
+        {'═'*35}
+        {text if text else '[Sin contenido]'}
+        {'═'*35}
+        """
+        context_parts.append(doc_str)
+    
+    full_context = "\n\n".join(context_parts) if context_parts else "No hay resultados válidos"
+    cl.context.current_step.output = full_context
+    return full_context
 
 @cl.step
 async def llm_step(query, context, **kwargs):
