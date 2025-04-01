@@ -78,9 +78,6 @@ def get_context_with_filters(collection_name, query_embedding):
             doc_text = str(doc_text) if doc_text else "[Sin texto]"
             meta = meta if isinstance(meta, dict) else {}
             
-            # Calcular score de similitud (1 - distancia para coseno) (chromaDB devuelve distancia, no devuelve score)
-            similarity_score = 1 - distance if distance is not None else 0
-            
             retrieve_data_list.append(
                 RetrieveData(
                     id=str(doc_id),
@@ -89,9 +86,6 @@ def get_context_with_filters(collection_name, query_embedding):
                         **meta,
                         "search_metadata": {  
                             "distance": float(distance) if distance else -1,
-                            "score": float(similarity_score),
-                            "rank": i + 1,
-                            "is_relevant": similarity_score > 0.5
                         }
                     }
                 )
@@ -109,8 +103,6 @@ def get_context_with_filters(collection_name, query_embedding):
                     "error": str(e),
                     "search_metadata": {  
                         "distance": -1,
-                        "score": -1,
-                        "is_relevant": False
                     }
                 }
             )
