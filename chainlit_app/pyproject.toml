@@ -3,7 +3,7 @@ name = "chainlit-app"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.12.9"
+requires-python = "==3.12.9"
 dependencies = [
     "langchain>=0.3.1",
     "langchain-openai>=0.2.1",
@@ -16,7 +16,6 @@ dependencies = [
     "langchain-core>=0.3.36",
     "langchain-text-splitters>=0.3.6",
     "pymupdf4llm>=0.0.17",
-    "langchain-ollama>=0.2.3",
     "aim>=3.28.0",
-    "chainlit>=2.4.201",
+    "chainlit>=2.4.302",
 ]

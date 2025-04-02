@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 8005
 
 # Comando por defecto para ejecutar la aplicación cuando se inicia el contenedor
-CMD ["python", "-m", "chainlit", "run","--host", "0.0.0.0", "--port", "8005", "app/main.py"]
+CMD ["python", "-m", "chainlit", "run","--host", "0.0.0.0", "--port", "80", "app/main.py"]

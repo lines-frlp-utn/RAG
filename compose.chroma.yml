@@ -2,29 +2,9 @@ include:
   - compose.base.yml
 
 services:
-
-  app:
-    container_name: prod-chainlit
-    build:
-      context: chainlit_app/
-      dockerfile: Dockerfile
-    ports:
-      - 8005:8005
-    env_file:
-      - .env
-    environment:
-      - MODEL_URL=${MODEL_URL:-http://ollama}
-      - MODEL_PORT=${MODEL_PORT:-11434}
-      - DB_URL=http://db-chroma
-      - DB_PORT=8006
-      - LLAMA_PARSE_API_KEY=${LLAMA_PARSE_API_KEY:-""}
-    volumes:
-      - rag-volume:/chainlit_app/database
-    depends_on:
-      - aim-server
-
-  db-chroma:
+  vector-db:
     image: chroma
+    container_name: db-chroma
     build:
       context: vectordbs/Chroma
       dockerfile: Dockerfile
