@@ -64,6 +64,7 @@ services:
       - DB_URL=http://vector-db
       - DB_PORT=8006
       - LLAMA_PARSE_API_KEY=${LLAMA_PARSE_API_KEY:-""}
+      - USE_AIM=${USE_AIM:-true}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.chainlit-router.entrypoints=web"
