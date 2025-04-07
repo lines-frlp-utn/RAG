@@ -18,13 +18,13 @@ services:
       - "traefik.http.routers.ollama-http.rule=PathRegexp(`^/(api|v1).*`)" # Route user requests matching /api or /v1
       - "traefik.http.services.ollama.loadbalancer.passhostheader=false"
 
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
 
   
   aim-server:
@@ -61,9 +61,13 @@ services:
     environment:
       - MODEL_URL=${MODEL_URL:-http://ollama}
       - MODEL_PORT=${MODEL_PORT:-11434}
-      - DB_URL=http://vector-db
+      - DB_URL=http://db-milvus
       - DB_PORT=8006
-      - LLAMA_PARSE_API_KEY=${LLAMA_PARSE_API_KEY:-""}
+      - LLAMA_PARSE_API_KEY=${LLAMA_PARSE_API_KEY}
+      - USERS_API_URL=http://users_db
+      - USERS_API_PORT=8009
+      - LITERAL_API_KEY=${LITERAL_API_KEY}
+      - CHAINLIT_AUTH_SECRET=${CHAINLIT_AUTH_SECRET}
     volumes:
       - rag-volume:/chainlit_app/database
     labels:

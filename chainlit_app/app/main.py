@@ -5,6 +5,9 @@ from app.embeddingGenerator import EmbeddingGenerator
 from app.models import get_conversational_answer
 from app.pdfExtractor import extract_text_from_pdf
 from app.splitter import split_markdown_text
+from langchain.memory import ConversationBufferMemory
+from chainlit.types import ThreadDict
+from app.auth import create_user, user_exists, UserExistsDTOResponse, Role
 from chainlit.input_widget import Select, Slider
 
 # from langchain.memory import ConversationBufferMemory
@@ -16,10 +19,34 @@ collection_name = "prueba_lines"
 def format_docs(docs):
     return "\n\n".join([d.page_content for d in docs])
 
+# Callback de autenticación
+@cl.password_auth_callback
+def auth_callback(username: str, password: str):
+    if (username and password):
+        user = user_exists(username, password)
+        if user.exists is False:
+            user = create_user(username, Role.CLIENTE, password)
+            if user:
+                print(f"User created: {username}")
+                return cl.User(
+                    identifier=username, metadata={"role": Role.CLIENTE, "provider": "credentials"}
+                )
+            else:
+                print(f"Error creating user: {username}")
+                return None
+        else:
+            print(f"User exists: {user}")
+            return cl.User(
+                identifier=username, metadata={"role": user.role_name, "provider": "credentials"}
+            )
+    else:
+        return None
 
 @cl.on_chat_start
 async def start():
     cl.user_session.set("session_number", 1)
+    app_user = cl.user_session.get("user")
+    cl.user_session.set("memory", ConversationBufferMemory(return_messages=True))
     # cl.user_session.set("memory", ConversationBufferMemory(return_messages=True))
     cl.user_session.set("aim_run", start_aim_run())
     settings = await cl.ChatSettings(
@@ -52,6 +79,12 @@ async def start():
         ]
     ).send()
 
+    if (app_user):
+        msg = cl.Message(content=f"¡Hola, {app_user.identifier}! ¿En qué puedo ayudarte hoy?")
+        await msg.send()
+    else:
+        cl.Message(content="Ha habido un error de autenticación. Por favor, vuelve a intentar iniciar sesión.").send()
+
     await update_settings(settings)
 
 
@@ -59,6 +92,19 @@ async def start():
 async def update_settings(settings):
     cl.user_session.set("settings", settings)
 
+@cl.on_chat_resume
+async def resume(thread: ThreadDict):
+    memory = ConversationBufferMemory(return_messages=True)
+    settings = cl.user_session.get("settings")
+    cl.user_session.set("aim_run", start_aim_run())
+    await update_settings(settings)
+    root_messages = [m for m in thread["steps"] if m["parentId"] is None]
+    for message in root_messages:
+        if message["type"] == "user_message":
+            memory.chat_memory.add_user_message(message["output"])
+        else:
+            memory.chat_memory.add_ai_message(message["output"])
+    cl.user_session.set("memory", memory)
 
 @cl.step
 async def vectordb_results_step(query: str):
@@ -101,9 +147,11 @@ async def llm_step(query, context, **kwargs):
 
 @cl.on_message
 async def main(message: cl.Message):
+    memory = cl.user_session.get("memory")
+    user = cl.user_session.get("user")
     session_number = cl.user_session.get("session_number")
     settings = cl.user_session.get("settings")
-    if message.elements:
+    if message.elements and user.metadata["role"] == Role.ADMIN:
         file = message.elements[0]
         # msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
         # await msg.send()
@@ -152,7 +200,10 @@ async def main(message: cl.Message):
     respuesta = await llm_step(query=query, context=context, **kwargs)
     msg.content = f"{respuesta}"
 
-    await msg.update()
+    await msg.update()  # Actualizamos el mensaje con los nuevos datos
+
+    memory.chat_memory.add_user_message(message.content)
+    memory.chat_memory.add_ai_message(msg.content)
 
 
 @cl.on_chat_end
