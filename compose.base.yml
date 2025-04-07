@@ -56,15 +56,13 @@ services:
       dockerfile: Dockerfile
     ports:
       - 80:80
-    env_file:
-      - .env
     environment:
-      - MODEL_URL=${MODEL_URL:-http://ollama}
-      - MODEL_PORT=${MODEL_PORT:-11434}
+      - MODEL_URL=http://ollama
+      - MODEL_PORT=11434
       - DB_URL=http://vector-db
       - DB_PORT=8006
-      - LLAMA_PARSE_API_KEY=${LLAMA_PARSE_API_KEY:-""}
-      - USE_AIM=${USE_AIM:-true}
+      - LLAMA_PARSE_API_KEY=""
+      - USE_AIM=true
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.chainlit-router.entrypoints=web"
