@@ -77,7 +77,7 @@ async def vectordb_results_step(query: str):
 
 @cl.step
 async def context_step(results):
-    """Muestra resultados de forma consistente para cualquier vector store"""
+    """Muestra resultados detectando automáticamente los atributos disponibles"""
     if not results:
         return "No se recibieron resultados"
     
@@ -86,22 +86,43 @@ async def context_step(results):
     
     context_parts = []
     for doc in docs:
+        # Extraer todos los atributos del nivel raíz (excepto metadata)
+        main_attrs = {k: v for k, v in doc.items() if k != 'metadata'}
         
-        doc_id = doc.get('id', 'N/A')
-        text = doc.get('text', '[Contenido no disponible]')
-        
-        # Acceder a distancia anidada
-        search_meta = doc.get('metadata', {}).get('search_metadata', {})
-        distance = search_meta.get('distance', 'N/A')
+        # Extraer todos los atributos anidados de metadata
+        meta_attrs = {}
+        if 'metadata' in doc:
+            # Aplanar la estructura de metadata para acceder a todos los niveles
+            def flatten_dict(d, prefix=''):
+                items = {}
+                for k, v in d.items():
+                    if isinstance(v, dict):
+                        items.update(flatten_dict(v, f"{prefix}{k}."))
+                    else:
+                        items[f"{prefix}{k}"] = v
+                return items
+            
+            meta_attrs = flatten_dict(doc['metadata'])
         
         # Construir representación
-        doc_str = f"""
-        📄 ID: {doc_id}
-        📊 Distancia: {distance}
-        {'═'*35}
-        {text if text else '[Sin contenido]'}
-        {'═'*35}
-        """
+        doc_parts = []
+        
+        # Mostrar primero los atributos principales
+        for attr, value in main_attrs.items():
+            if attr == 'text':
+                continue  # Lo manejamos aparte como contenido
+            doc_parts.append(f"🔹 {attr}: {value}")
+        
+        # Luego los metadatos
+        for attr, value in meta_attrs.items():
+            doc_parts.append(f"🔸 {attr}: {value}")
+        
+        # El texto como contenido principal
+        text = main_attrs.get('text', '[Contenido no disponible]')
+        
+        doc_str = "\n".join(doc_parts)
+        doc_str += f"\n{'═'*35}\n{text}\n{'═'*35}"
+        
         context_parts.append(doc_str)
     
     full_context = "\n\n".join(context_parts) if context_parts else "No hay resultados válidos"
@@ -114,7 +135,7 @@ async def llm_step(query, context, **kwargs):
     print(f"Chat context: {chat_context}")
     aim_run = cl.user_session.get("aim_run")
     respuesta = await cl.make_async(get_conversational_answer)(
-        query, context, chat_context, aim_run, **kwargs
+        query, chat_context, aim_run, **kwargs
     )
     return respuesta
 
