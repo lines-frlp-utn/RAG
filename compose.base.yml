@@ -2,7 +2,7 @@ services:
 
   ollama:
     container_name: ollama
-    image: ollama/ollama:0.6.2
+    image: ollama/ollama:0.6.5
     volumes:
       - ollama:/root/.ollama
     ports:
