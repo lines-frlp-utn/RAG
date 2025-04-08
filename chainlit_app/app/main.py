@@ -135,7 +135,7 @@ async def llm_step(query, context, **kwargs):
     print(f"Chat context: {chat_context}")
     aim_run = cl.user_session.get("aim_run")
     respuesta = await cl.make_async(get_conversational_answer)(
-        query, chat_context, aim_run, **kwargs
+        query, chat_context, context, aim_run, **kwargs
     )
     return respuesta
 
