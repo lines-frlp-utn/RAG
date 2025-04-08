@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     MODEL_PORT: int
     DB_PORT: int
     LLAMA_PARSE_API_KEY: str | None
+    USE_AIM: bool
 
 
 conf = Settings()

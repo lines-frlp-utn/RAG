@@ -162,3 +162,8 @@ cython_debug/
 /chainlit_app/database
 
 volumes
+vectordbs/Chroma/database/chroma.sqlite3
+vectordbs/Chroma/database/a105afa7-4483-460c-b159-1b8d46209e5b/data_level0.bin
+vectordbs/Chroma/database/a105afa7-4483-460c-b159-1b8d46209e5b/header.bin
+vectordbs/Chroma/database/a105afa7-4483-460c-b159-1b8d46209e5b/length.bin
+vectordbs/Chroma/database/a105afa7-4483-460c-b159-1b8d46209e5b/link_lists.bin

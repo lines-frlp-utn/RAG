@@ -28,6 +28,12 @@ class QueryData(BaseModel):
     query_embedding: list[float]
 
 
+class RetrieveData(BaseModel):
+    id: str
+    text: str
+    metadata: dict
+
+
 def create_schema():
     schema = MilvusClient.create_schema(
         auto_id=False,
@@ -95,13 +101,11 @@ def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
     res = client.insert(collection_name=collection_name, data=uploadData)
     print(f"Cargados con éxito: {res}")
 
-
 def get_context_with_filters(query_data: QueryData):
     print("ENTRANDO A LA FUNCION GET CONTEXT")
 
     ## Campo dense
     dense_query_vector = query_data.query_embedding
-    print(dense_query_vector)
     dense_param = {
         "data": [dense_query_vector],
         "anns_field": "dense",
@@ -119,13 +123,13 @@ def get_context_with_filters(query_data: QueryData):
     }
     request_2 = AnnSearchRequest(**sparse_param)
 
-    ## Creamos la lista de requests
+    ## Lista de requests
     reqs = [request_1, request_2]
 
-    ## Creamos ReRanker
-    ranker = RRFRanker()  # ==> Default en k=60
+    ## ReRanker
+    ranker = RRFRanker()
 
-    ## Realizamos la búsqueda
+    ## Búsqueda híbrida
     res = client.hybrid_search(
         collection_name=query_data.collection_name,
         reqs=reqs,
@@ -133,20 +137,45 @@ def get_context_with_filters(query_data: QueryData):
         limit=5,
         output_fields=["text"],
     )
-    print(f"Resultado: {res}")
-    return res
 
+    retrieve_data_list = []
+    for hit in res[0]:
+        try:
+            # Manejar tanto objetos como diccionarios
+            if isinstance(hit, dict):
+                hit_id = hit.get('id', 'unknown')
+                distance = hit.get('distance', -1)
+                text = hit.get('entity', {}).get('text', '') if 'entity' in hit else hit.get('text', '')
+            else:
+                hit_id = str(getattr(hit, 'id', 'unknown'))
+                distance = float(getattr(hit, 'distance', -1))
+                text = getattr(getattr(hit, 'entity', None), 'text', '')
+
+            retrieve_data_list.append(
+                RetrieveData(
+                    id=str(hit_id),
+                    text=str(text).strip(),
+                    metadata={
+                        "search_metadata": {
+                            "distance": float(distance) if distance is not None else -1
+                        }
+                    }
+                )
+            )
+        except Exception as e:
+            print(f"Error procesando hit: {str(e)}")
+            continue
+
+    return retrieve_data_list
 
 @app.post("/upload-embeddings")
 def upload(data: EmbeddingData):
     upload_pdf_to_vector_db(data.dataWithEmbeddings, data.collection_name)
     return {"status": "success"}
 
-
 @app.post("/get-context")
 def get_context(query_data: QueryData):
-    results = get_context_with_filters(query_data)
-    result_context = ""
-    for result in results[0]:
-        result_context += result["entity"]["text"] + "\n"
-    return result_context
+    results= get_context_with_filters(query_data)
+    if not results:
+        return {"status": "No se encontraron resultados"}
+    return results

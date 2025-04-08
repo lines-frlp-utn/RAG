@@ -6,9 +6,7 @@ WORKDIR /code
 # Mount UV and install dependencies
 RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv export --no-dev  > requirements.txt && \
+    --mount=type=bind,source=requirements.txt,target=requirements.txt \
     uv pip install --system -r requirements.txt
 
 # Copiamos todo el contenido del proyecto. .dockerignore se encarga de ignorar los archivos que no queremos copiar

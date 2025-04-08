@@ -11,7 +11,7 @@ services:
       - OLLAMA_DEBUG=true
       - CUDA_VISIBLE_DEVICES=0
       - OLLAMA_CONTEXT_LENGTH=8192
-    entrypoint: bash -c "ollama serve & pid=$!; sleep 5; ollama pull llama3.1; ollama pull gemma2:2b; ollama pull granite-embedding:278m; wait $pid"
+    entrypoint: bash -c "ollama serve & pid=$!; sleep 5; ollama pull llama3.1; ollama pull gemma3:1b; ollama pull granite-embedding:278m; wait $pid"
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.ollama.loadbalancer.server.port=11434"
@@ -56,16 +56,13 @@ services:
       dockerfile: Dockerfile
     ports:
       - 80:80
-    env_file:
-      - .env
     environment:
-      - MODEL_URL=${MODEL_URL:-http://ollama}
-      - MODEL_PORT=${MODEL_PORT:-11434}
+      - MODEL_URL=http://ollama
+      - MODEL_PORT=11434
       - DB_URL=http://vector-db
       - DB_PORT=8006
-      - LLAMA_PARSE_API_KEY=${LLAMA_PARSE_API_KEY:-""}
-    volumes:
-      - rag-volume:/chainlit_app/database
+      - LLAMA_PARSE_API_KEY=""
+      - USE_AIM=true
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.chainlit-router.entrypoints=web"
