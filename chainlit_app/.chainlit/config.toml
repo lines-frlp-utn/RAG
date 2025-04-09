@@ -9,7 +9,7 @@ user_env = []
 session_timeout = 3600
 
 # Duration (in seconds) of the user session expiry
-user_session_timeout = 3600  # 15 days
+user_session_timeout = 3600
 
 # Enable third parties caching (e.g LangChain cache)
 cache = false
@@ -52,9 +52,16 @@ edit_message = true
 
 [UI]
 # Name of the assistant.
-name = "Assistant"
+name = "Asistente"
 
-# default_theme = "dark"
+# Custom login page image, relative to public directory or external URL
+login_page_image = "../public/login_image.jpg"
+
+# Custom login page image filter (Tailwind internal filters, no dark/light variants)
+login_page_image_filter = ""
+login_page_image_dark_filter = ""
+
+default_theme = "dark"
 
 # layout = "wide"
 
