@@ -1,4 +1,5 @@
 import chainlit as cl
+from pydantic import BaseModel
 from app.aim_tracker import end_aim_run, start_aim_run
 from app.databases import get_context_from_db, post_embeddings
 from app.embeddingGenerator import EmbeddingGenerator
@@ -6,16 +7,17 @@ from app.models import get_conversational_answer
 from app.pdfExtractor import extract_text_from_pdf
 from app.splitter import split_markdown_text
 from chainlit.input_widget import Select, Slider
+from typing import List, Union
 
 # from langchain.memory import ConversationBufferMemory
 
 embedding_generator = EmbeddingGenerator()
 collection_name = "prueba_lines"
 
-
-def format_docs(docs):
-    return "\n\n".join([d.page_content for d in docs])
-
+class RetrieveData(BaseModel):
+    id: str
+    text: str
+    metadata: dict
 
 @cl.on_chat_start
 async def start():
@@ -74,60 +76,25 @@ async def vectordb_results_step(query: str):
     context = await context_step(results)
     return context
 
-
-@cl.step
-async def context_step(results):
-    """Muestra resultados detectando automáticamente los atributos disponibles"""
-    if not results:
-        return "No se recibieron resultados"
+async def context_step(results: List[dict]) -> str:
+    """Procesa resultados de bases vectoriales (siempre lista)"""
     
-    # Normalizar a lista
-    docs = [results] if isinstance(results, dict) else results
+    context_sections = []
     
-    context_parts = []
-    for doc in docs:
-        # Extraer todos los atributos del nivel raíz (excepto metadata)
-        main_attrs = {k: v for k, v in doc.items() if k != 'metadata'}
-        
-        # Extraer todos los atributos anidados de metadata
-        meta_attrs = {}
-        if 'metadata' in doc:
-            # Aplanar la estructura de metadata para acceder a todos los niveles
-            def flatten_dict(d, prefix=''):
-                items = {}
-                for k, v in d.items():
-                    if isinstance(v, dict):
-                        items.update(flatten_dict(v, f"{prefix}{k}."))
-                    else:
-                        items[f"{prefix}{k}"] = v
-                return items
-            
-            meta_attrs = flatten_dict(doc['metadata'])
-        
-        # Construir representación
-        doc_parts = []
-        
-        # Mostrar primero los atributos principales
-        for attr, value in main_attrs.items():
-            if attr == 'text':
-                continue  # Lo manejamos aparte como contenido
-            doc_parts.append(f"🔹 {attr}: {value}")
-        
-        # Luego los metadatos
-        for attr, value in meta_attrs.items():
-            doc_parts.append(f"🔸 {attr}: {value}")
-        
-        # El texto como contenido principal
-        text = main_attrs.get('text', '[Contenido no disponible]')
-        
-        doc_str = "\n".join(doc_parts)
-        doc_str += f"\n{'═'*35}\n{text}\n{'═'*35}"
-        
-        context_parts.append(doc_str)
+    for result in results:
+        # Convertir el diccionario en una instancia de RetrieveData
+        section = [
+            f"🏷️ ID: {result.id}",
+            *[f"📋 {param}: {value}" for param, value in result.metadata.items()],
+            f"\n{'━'*40}",
+            result.text,
+            f"{'━'*40}"
+        ]
+        context_sections.append("\n".join(section))
     
-    full_context = "\n\n".join(context_parts) if context_parts else "No hay resultados válidos"
-    cl.context.current_step.output = full_context
-    return full_context
+    full_output = "\n\n".join(context_sections) if context_sections else "Sin coincidencias"
+    cl.context.current_step.output = full_output
+    return full_output
 
 @cl.step
 async def llm_step(query, context, **kwargs):
