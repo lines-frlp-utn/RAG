@@ -47,7 +47,6 @@ async def start():
     cl.user_session.set("session_number", 1)
     app_user = cl.user_session.get("user")
     cl.user_session.set("memory", ConversationBufferMemory(return_messages=True))
-    # cl.user_session.set("memory", ConversationBufferMemory(return_messages=True))
     cl.user_session.set("aim_run", start_aim_run())
     settings = await cl.ChatSettings(
         [
