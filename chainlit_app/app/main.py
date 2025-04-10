@@ -1,23 +1,18 @@
 import chainlit as cl
 from pydantic import BaseModel
 from app.aim_tracker import end_aim_run, start_aim_run
-from app.databases import get_context_from_db, post_embeddings
+from app.databases import get_context_from_db, post_embeddings, RetrieveData
 from app.embeddingGenerator import EmbeddingGenerator
 from app.models import get_conversational_answer
 from app.pdfExtractor import extract_text_from_pdf
 from app.splitter import split_markdown_text
 from chainlit.input_widget import Select, Slider
-from typing import List, Union
+
 
 # from langchain.memory import ConversationBufferMemory
 
 embedding_generator = EmbeddingGenerator()
 collection_name = "prueba_lines"
-
-class RetrieveData(BaseModel):
-    id: str
-    text: str
-    metadata: dict
 
 @cl.on_chat_start
 async def start():
@@ -76,7 +71,7 @@ async def vectordb_results_step(query: str):
     context = await context_step(results)
     return context
 
-async def context_step(results: List[dict]) -> str:
+async def context_step(results: list[RetrieveData]) -> str:
     """Procesa resultados de bases vectoriales (siempre lista)"""
     
     context_sections = []

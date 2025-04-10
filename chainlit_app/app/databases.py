@@ -20,7 +20,7 @@ def post_embeddings(dataWithEmbeddings, collection_name):
         return f"success: {response.status_code} - {response.text}"
 
 
-def get_context_from_db(collection_name, query, query_embedding):
+def get_context_from_db(collection_name, query, query_embedding) -> list[RetrieveData]:
     response = requests.post(
         f"{conf.DB_URL}:{conf.DB_PORT}/get-context",
         json={
