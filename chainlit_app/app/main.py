@@ -75,7 +75,7 @@ async def context_step(results: list[RetrieveData]) -> str:
     """Procesa resultados de bases vectoriales (siempre lista)"""
     
     context_sections = []
-    
+    context_texts = []
     for result in results:
         # Convertir el diccionario en una instancia de RetrieveData
         section = [
@@ -86,10 +86,12 @@ async def context_step(results: list[RetrieveData]) -> str:
             f"{'━'*40}"
         ]
         context_sections.append("\n".join(section))
+        context_texts.append(result.text)
     
     full_output = "\n\n".join(context_sections) if context_sections else "Sin coincidencias"
+    context_texts = "\n\n".join(context_texts) if context_texts else "Sin coincidencias"
     cl.context.current_step.output = full_output
-    return full_output
+    return context_texts
 
 @cl.step
 async def llm_step(query, context, **kwargs):
