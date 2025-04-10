@@ -140,17 +140,9 @@ def get_context_with_filters(query_data: QueryData):
 
     retrieve_data_list = []
     for hit in res[0]:
-        try:
-            # Manejar tanto objetos como diccionarios
-            if isinstance(hit, dict):
-                hit_id = hit.get('id', 'unknown')
-                distance = hit.get('distance', -1)
-                text = hit.get('entity', {}).get('text', '') if 'entity' in hit else hit.get('text', '')
-            else:
-                hit_id = str(getattr(hit, 'id', 'unknown'))
-                distance = float(getattr(hit, 'distance', -1))
-                text = getattr(getattr(hit, 'entity', None), 'text', '')
-
+            hit_id = hit.get('id', 'unknown')
+            distance = hit.get('distance', -1)
+            text = hit.get('entity', {}).get('text', 'not text found')
             retrieve_data_list.append(
                 RetrieveData(
                     id=str(hit_id),
@@ -162,10 +154,7 @@ def get_context_with_filters(query_data: QueryData):
                     }
                 )
             )
-        except Exception as e:
-            print(f"Error procesando hit: {str(e)}")
-            continue
-
+    print(f"Resultados de búsqueda: {retrieve_data_list}")
     return retrieve_data_list
 
 @app.post("/upload-embeddings")
@@ -174,7 +163,7 @@ def upload(data: EmbeddingData):
     return {"status": "success"}
 
 @app.post("/get-context")
-def get_context(query_data: QueryData):
+def get_context(query_data: QueryData) -> list[RetrieveData]:
     results= get_context_with_filters(query_data)
     if not results:
         return {"status": "No se encontraron resultados"}
