@@ -1,6 +1,7 @@
 import chainlit as cl
+from pydantic import BaseModel
 from app.aim_tracker import end_aim_run, start_aim_run
-from app.databases import get_context_from_db, post_embeddings
+from app.databases import get_context_from_db, post_embeddings, RetrieveData
 from app.embeddingGenerator import EmbeddingGenerator
 from app.models import get_conversational_answer
 from app.pdfExtractor import extract_text_from_pdf
@@ -9,6 +10,7 @@ from langchain.memory import ConversationBufferMemory
 from chainlit.types import ThreadDict
 from app.auth import create_user, user_exists, UserExistsDTOResponse, Role
 from chainlit.input_widget import Select, Slider
+
 
 # from langchain.memory import ConversationBufferMemory
 
@@ -55,7 +57,7 @@ async def start():
                 label="model",
                 values=[
                     "llama3.1",
-                    "gemma2:2b",
+                    "gemma3:1b",
                 ],
                 initial_index=0,
             ),
@@ -116,22 +118,30 @@ async def vectordb_results_step(query: str):
         query=query,
         query_embedding=query_embedding,
     )
-    cl.context.current_step.output = results
-    # context = await context_step(results)
-    # return context
-    return results
-
-
-# REFACTOR milvus logic to here
-@cl.step
-async def context_step(results):
-    context = ""
-    for doc in results:
-        context = f"{context} \n {doc}"
-
-    cl.context.current_step.output = context
+    context = await context_step(results)
     return context
 
+async def context_step(results: list[RetrieveData]) -> str:
+    """Procesa resultados de bases vectoriales (siempre lista)"""
+    
+    context_sections = []
+    context_texts = []
+    for result in results:
+        # Convertir el diccionario en una instancia de RetrieveData
+        section = [
+            f"🏷️ ID: {result.id}",
+            *[f"📋 {param}: {value}" for param, value in result.metadata.items()],
+            f"\n{'━'*40}",
+            result.text,
+            f"{'━'*40}"
+        ]
+        context_sections.append("\n".join(section))
+        context_texts.append(result.text)
+    
+    full_output = "\n\n".join(context_sections) if context_sections else "Sin coincidencias"
+    context_texts = "\n\n".join(context_texts) if context_texts else "Sin coincidencias"
+    cl.context.current_step.output = full_output
+    return context_texts
 
 @cl.step
 async def llm_step(query, context, **kwargs):

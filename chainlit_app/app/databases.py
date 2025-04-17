@@ -1,6 +1,11 @@
 import requests
 from app.config import conf
+from pydantic import BaseModel
 
+class RetrieveData(BaseModel):
+    id: str
+    text: str
+    metadata: dict
 
 def post_embeddings(dataWithEmbeddings, collection_name):
     print("collection name: " + collection_name)
@@ -15,7 +20,7 @@ def post_embeddings(dataWithEmbeddings, collection_name):
         return f"success: {response.status_code} - {response.text}"
 
 
-def get_context_from_db(collection_name, query, query_embedding):
+def get_context_from_db(collection_name, query, query_embedding) -> list[RetrieveData]:
     response = requests.post(
         f"{conf.DB_URL}:{conf.DB_PORT}/get-context",
         json={
@@ -29,4 +34,5 @@ def get_context_from_db(collection_name, query, query_embedding):
         raise Exception(f"Error: {response.status_code} - {response.text}")
     else:
         print("Request successful")
-        return response.json()
+        results=response.json()
+        return [RetrieveData.model_validate(result) for result in results]

@@ -9,23 +9,25 @@ llm = ChatOpenAI(
     api_key="none",
 )
 
-
-def get_conversational_answer(query, db_context, chat_history, aim_run, **kwargs):
+def get_conversational_answer(query, db_context, chat_history, aim_run, safe_context=None, **kwargs):
+    # Usar safe_context si está disponible, de lo contrario formatear db_context
+    tracking_context = safe_context if safe_context is not None else format_db_context(db_context)
+    
     track_param(
         aim_run,
         "llm_config",
         {
-            "model": "llama3.1",
+            "model": kwargs.get("model", "llama3.1"),
             "base_url": f"{conf.MODEL_URL}:{conf.MODEL_PORT}/v1",
-            "temperature": 0,
+            "temperature": kwargs.get("temperature", 0),
             "api_key": "none",
         },
     )
-    # Formatear el contexto de la base de datos
+    
     system_prompt = f"""Eres un asistente llamado lines-bot. Siempre vas a responder en español.
     El usuario no sabe que se te proporciona un contexto, no lo menciones.
-    Para responder la consulta podes ayudarte con la informacion de contexto y el historial de conversacion:
-    {db_context}
+    Para responder la consulta podes ayudarte con la informacion de contexto:
+    {format_db_context(db_context)}
     """
 
     # Reemplazar el system prompt al inicio de la conversación con context actualizado
@@ -37,10 +39,30 @@ def get_conversational_answer(query, db_context, chat_history, aim_run, **kwargs
     # Imprimir el prompt para depuración
     print(f"system prompt: {system_prompt}")
     track_text(aim_run, "system_prompt", system_prompt)
-    track_text(aim_run, "db_context_section", db_context)
+    track_text(aim_run, "db_context_section", tracking_context)  # Usar el contexto seguro para tracking
     track_text(aim_run, "user_prompt", query)
 
-    # Generar la respuesta usando el LLM
+
     answer = llm.invoke(chat_history, **kwargs)
     track_text(aim_run, "answer", answer.content)
     return answer.content
+
+
+def format_db_context(db_context):
+    """Formatea el contexto de la base de datos para asegurar que sea un string válido."""
+    if isinstance(db_context, str):
+        return db_context
+    elif isinstance(db_context, list):
+        context_lines = []
+        for item in db_context:
+            if hasattr(item, 'text'):
+                context_lines.append(str(item.text))
+            elif isinstance(item, dict) and 'text' in item:
+                context_lines.append(str(item['text']))
+            elif isinstance(item, str):
+                context_lines.append(item)
+        return "\n\n".join(context_lines) if context_lines else "No hay contexto disponible"
+    elif db_context is None:
+        return "No hay contexto disponible"
+    else:
+        return str(db_context)

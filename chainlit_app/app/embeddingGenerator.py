@@ -7,14 +7,13 @@ from openai import OpenAI
 # http://<IP_DEL_SERVIDOR>:<PUERTO>/api/embeddings
 remote_service_url = f"{conf.MODEL_URL}:{conf.MODEL_PORT}/v1"
 
-
 class EmbeddingGenerator:
     def __init__(self):
         self.service_url = remote_service_url
         self.embedding_model = OpenAI(
             base_url=remote_service_url,
             api_key="ollama",
-            timeout=15,
+            timeout=30,    # Timeout ajustado a 30 segundos para evitar errores por mala conexion 
         )
 
     def generate_id(self, text):

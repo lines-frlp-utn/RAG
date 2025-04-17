@@ -162,3 +162,4 @@ cython_debug/
 /chainlit_app/database
 
 volumes
+/vectordbs/Chroma/database/*
