@@ -15,13 +15,16 @@ services:
     #   - SYS_PTRACE
     # security_opt:
     #   - seccomp:unconfined
+    env_file:
+      - .env
     environment:
       - MODEL_URL=https://desaialines.frlp.utn.edu.ar
       - MODEL_PORT=443
       - DB_URL=http://localhost
       - DB_PORT=8090
-      - LLAMA_PARSE_API_KEY=""
       - USE_AIM=false
+      - USERS_API_URL=http://users_db
+      - USERS_API_PORT=8009
 
     # Overrides default command so things don't shut down after the process ends.
     command: ["sh", "-c", "while :; do sleep 2073600; done"]

@@ -12,8 +12,6 @@ from app.auth import create_user, user_exists, UserExistsDTOResponse, Role
 from chainlit.input_widget import Select, Slider
 
 
-# from langchain.memory import ConversationBufferMemory
-
 embedding_generator = EmbeddingGenerator()
 collection_name = "prueba_lines"
 

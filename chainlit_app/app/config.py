@@ -8,9 +8,9 @@ class Settings(BaseSettings):
     DB_PORT: int
     LLAMA_PARSE_API_KEY: str | None
     USE_AIM: bool
-    LITERAL_API_KEY: str
-    USERS_API_URL: str
-    USERS_API_PORT: int
-    CHAINLIT_AUTH_SECRET: str
+    LITERAL_API_KEY: str | None
+    USERS_API_URL: str | None
+    USERS_API_PORT: int | None
+    CHAINLIT_AUTH_SECRET: str | None
 
 conf = Settings()
