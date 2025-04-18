@@ -14,8 +14,9 @@ Base = declarative_base()
 
 class UserCreateDTO(BaseModel):
     identifier: str
-    password: str
+    password: str | None = None  # puede ser None si es OAuth
     role_name: str
+    auth_provider: str = "credentials"
 
 class RoleResponseDTO(BaseModel):
     exists: bool
@@ -29,10 +30,11 @@ class Role(Base):
     users = relationship("Usuario", back_populates="role")
 
 class Usuario(Base):
-    __tablename__ = "usuarios"
+    _tablename_ = "usuarios"
     id = Column(Integer, primary_key=True, index=True)
     identifier = Column(String(50), unique=True, index=True, nullable=False)
-    password = Column(String(50), nullable=False)
+    password = Column(String(50), nullable=True) # Puede ser NULL si es OAuth
+    auth_provider = Column(String(50), nullable=False, default="credentials")
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
 
     role = relationship("Role", back_populates="users")
@@ -79,11 +81,19 @@ async def create_user(user: UserCreateDTO, db: Session = Depends(get_db)):
     existing_user = db.query(Usuario).filter(Usuario.identifier == user.identifier).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="User already exists")
-    new_user = Usuario(identifier=user.identifier, role_id=role.id, password=user.password)
+    new_user = Usuario(
+        identifier=user.identifier, 
+        role_id=role.id,
+        password=user.password or "",
+        auth_provider=user.auth_provider)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return UserCreateDTO(identifier=new_user.identifier, role_name=role.name, password=new_user.password)
+    return UserCreateDTO(
+        identifier=new_user.identifier,
+        role_name=role.name,
+        password=new_user.password,
+        auth_provider=user.auth_provider)
 
 @app.patch("/users/role/{identifier}")
 async def update_user_role(identifier: str, role: str, db: Session = Depends(get_db)):

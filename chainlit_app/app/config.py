@@ -12,5 +12,7 @@ class Settings(BaseSettings):
     USERS_API_URL: str | None
     USERS_API_PORT: int | None
     CHAINLIT_AUTH_SECRET: str | None
+    OAUTH_GOOGLE_CLIENT_ID: str | None
+    OAUTH_GOOGLE_CLIENT_SECRET: str | None
 
 conf = Settings()

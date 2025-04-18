@@ -10,6 +10,7 @@ from langchain.memory import ConversationBufferMemory
 from chainlit.types import ThreadDict
 from app.auth import create_user, user_exists, UserExistsDTOResponse, Role
 from chainlit.input_widget import Select, Slider
+from typing import Dict
 
 
 embedding_generator = EmbeddingGenerator()
@@ -41,6 +42,42 @@ def auth_callback(username: str, password: str):
             )
     else:
         return None
+
+@cl.oauth_callback
+def oauth_callback(
+    provider_id: str,
+    token: str,
+    raw_user_data: Dict[str, str],
+    ):
+    email = raw_user_data.get("email")
+    name = raw_user_data.get("name", "")
+    
+    if not email:
+        print("OAuth callback: Email no proporcionado")
+        return None
+    try:
+        user = user_exists(name, "") 
+        if not user or user.exists is False:
+            print("Usuario no existe, creando con OAuth")
+            created = create_user(name, Role.CLIENTE, None, provider_id)  
+            role = Role.CLIENTE if created else None
+        else:
+            print("Usuario encontrado")
+            role = user.role_name
+
+    except Exception as e:
+        print(f"Error durante verificación/creación de usuario: {e}")
+        return None 
+
+    return cl.User(
+        identifier=name,
+        metadata={
+            "name": name,
+            "role": role,
+            "provider": provider_id  
+        }
+    )
+
 
 @cl.on_chat_start
 async def start():

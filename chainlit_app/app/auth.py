@@ -22,7 +22,7 @@ def user_exists(userIdentifier: str, password: str):
         user = UserExistsDTOResponse(**data)
         return user
 
-def create_user(userIdentifier, role, password):
+def create_user(userIdentifier, role, password, providerId):
     print(f"userIdentifier: {userIdentifier}")
     print(f"role: {role}")
     response = requests.post(
@@ -30,7 +30,8 @@ def create_user(userIdentifier, role, password):
         json={
             "identifier": userIdentifier,
             "role_name": role,
-            "password": password
+            "password": password or "",
+            "auth_provider": providerId
         }
     )
     if response.status_code != 200:
