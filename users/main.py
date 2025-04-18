@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends
-from sqlalchemy import Column, Integer, String, create_engine, ForeignKey
+from sqlalchemy import Column, Integer, String, create_engine, ForeignKey ,text ,inspect
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session, relationship
+from sqlalchemy.orm import sessionmaker, Session, relationship 
 import os
 from pydantic import BaseModel
 
@@ -14,9 +14,10 @@ Base = declarative_base()
 
 class UserCreateDTO(BaseModel):
     identifier: str
-    password: str | None = None  # puede ser None si es OAuth
+    password: str  # puede ser vacio si es OAuth
     role_name: str
     auth_provider: str = "credentials"
+    email:str = None
 
 class RoleResponseDTO(BaseModel):
     exists: bool
@@ -30,11 +31,12 @@ class Role(Base):
     users = relationship("Usuario", back_populates="role")
 
 class Usuario(Base):
-    _tablename_ = "usuarios"
+    __tablename__ = "usuarios"
     id = Column(Integer, primary_key=True, index=True)
     identifier = Column(String(50), unique=True, index=True, nullable=False)
     password = Column(String(50), nullable=True) # Puede ser NULL si es OAuth
     auth_provider = Column(String(50), nullable=False, default="credentials")
+    email = Column(String(50), unique=True, nullable=True)
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
 
     role = relationship("Role", back_populates="users")
@@ -58,10 +60,19 @@ def init_roles(db: Session):
             db.add(Role(name=role_name))
     db.commit()
 
+def add_column_if_not_exists(db: Session, table_name: str, column_name: str, column_type: str):
+    inspector = inspect(engine)
+    columns = [col["name"] for col in inspector.get_columns(table_name)]
+    if column_name not in columns:
+        db.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"))
+        db.commit()
+
 @app.on_event("startup")
 def startup_event():
     db = SessionLocal()
     init_roles(db)
+    add_column_if_not_exists(db, "usuarios", "email", "VARCHAR(50)")
+    add_column_if_not_exists(db, "usuarios", "auth_provider", "VARCHAR(50)")
     db.close()
 
 @app.get("/users/login/{identifier}")
@@ -85,7 +96,8 @@ async def create_user(user: UserCreateDTO, db: Session = Depends(get_db)):
         identifier=user.identifier, 
         role_id=role.id,
         password=user.password or "",
-        auth_provider=user.auth_provider)
+        auth_provider=user.auth_provider,
+        email=user.email)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -93,7 +105,8 @@ async def create_user(user: UserCreateDTO, db: Session = Depends(get_db)):
         identifier=new_user.identifier,
         role_name=role.name,
         password=new_user.password,
-        auth_provider=user.auth_provider)
+        auth_provider=user.auth_provider,
+        email=new_user.email)
 
 @app.patch("/users/role/{identifier}")
 async def update_user_role(identifier: str, role: str, db: Session = Depends(get_db)):

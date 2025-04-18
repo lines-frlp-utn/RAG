@@ -23,7 +23,7 @@ services:
       - DB_URL=http://localhost
       - DB_PORT=8090
       - USE_AIM=false
-      - USERS_API_URL=http://localhost
+      - USERS_API_URL=http://users_db
       - USERS_API_PORT=8009
 
     # Overrides default command so things don't shut down after the process ends.
