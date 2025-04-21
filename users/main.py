@@ -18,6 +18,7 @@ class UserCreateDTO(BaseModel):
     role_name: str
     auth_provider: str = "credentials"
     email:str = None
+    picture: str
 
 class RoleResponseDTO(BaseModel):
     exists: bool
@@ -37,6 +38,7 @@ class Usuario(Base):
     password = Column(String(50), nullable=True) # Puede ser NULL si es OAuth
     auth_provider = Column(String(50), nullable=False, default="credentials")
     email = Column(String(50), unique=True, nullable=True)
+    picture = Column(String(100), nullable=True)
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
 
     role = relationship("Role", back_populates="users")
@@ -73,6 +75,7 @@ def startup_event():
     init_roles(db)
     add_column_if_not_exists(db, "usuarios", "email", "VARCHAR(50)")
     add_column_if_not_exists(db, "usuarios", "auth_provider", "VARCHAR(50)")
+    add_column_if_not_exists(db, "usuarios", "picture", "VARCHAR(100)")
     db.close()
 
 @app.get("/users/login/{identifier}")
@@ -97,7 +100,8 @@ async def create_user(user: UserCreateDTO, db: Session = Depends(get_db)):
         role_id=role.id,
         password=user.password or "",
         auth_provider=user.auth_provider,
-        email=user.email)
+        email=user.email,
+        picture=user.picture)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -106,7 +110,8 @@ async def create_user(user: UserCreateDTO, db: Session = Depends(get_db)):
         role_name=role.name,
         password=new_user.password,
         auth_provider=user.auth_provider,
-        email=new_user.email)
+        email=new_user.email,
+        picture=new_user.picture)
 
 @app.patch("/users/role/{identifier}")
 async def update_user_role(identifier: str, role: str, db: Session = Depends(get_db)):

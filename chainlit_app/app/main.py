@@ -57,11 +57,10 @@ def oauth_callback(
         print("OAuth callback: Email no proporcionado")
         return None
     try:
-        print(f"la url de la foto es {picture}")
         user = user_exists(name, "") ##
         if not user or user.exists is False:
             print("Usuario no existe, creando con OAuth")
-            created = create_user(name, Role.CLIENTE, "", provider_id, email) ##  
+            created = create_user(name, Role.CLIENTE, "", provider_id, email,picture) ##  
             role = Role.CLIENTE if created else None
         else:
             print("Usuario encontrado")
@@ -75,7 +74,8 @@ def oauth_callback(
         identifier=name,
         metadata={
             "role": role,
-            "provider": provider_id  
+            "provider": provider_id , 
+            #"picture": picture,
         }
     )
 
