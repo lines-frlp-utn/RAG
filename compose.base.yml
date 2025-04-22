@@ -66,6 +66,8 @@ services:
       - USERS_API_PORT=8009
       - LITERAL_API_KEY=${LITERAL_API_KEY}
       - CHAINLIT_AUTH_SECRET=${CHAINLIT_AUTH_SECRET}
+      - OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID}
+      - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET}
       - USE_AIM=true
     volumes:
       - rag-volume:/chainlit_app/database

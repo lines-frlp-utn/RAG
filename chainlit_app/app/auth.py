@@ -22,7 +22,7 @@ def user_exists(userIdentifier: str, password: str):
         user = UserExistsDTOResponse(**data)
         return user
 
-def create_user(userIdentifier, role, password, providerId,email,picture):
+def create_user(userIdentifier, role, password, providerId='', email='', picture=''):
     print(f"userIdentifier: {userIdentifier}")
     print(f"role: {role}")
     response = requests.post(
