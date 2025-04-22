@@ -18,13 +18,13 @@ services:
       - "traefik.http.routers.ollama-http.rule=PathRegexp(`^/(api|v1).*`)" # Route user requests matching /api or /v1
       - "traefik.http.services.ollama.loadbalancer.passhostheader=false"
 
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   
   aim-server:
@@ -108,8 +108,6 @@ volumes:
   ollama:
     name: ollama
   rag-volume:
-    driver: local
-  transformer-volume:
     driver: local
   aim-volume:
     driver: local
