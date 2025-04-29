@@ -14,6 +14,7 @@ services:
       standalone:
         condition: service_healthy
     command: ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8006"]
+    restart: ${RESTART_POLICY:-no}
 
   etcd:
     container_name: milvus-etcd
@@ -31,6 +32,7 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+    restart: ${RESTART_POLICY:-no}
 
   minio:
     container_name: milvus-minio
@@ -49,6 +51,7 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+    restart: ${RESTART_POLICY:-no}
 
   standalone:
     container_name: milvus-standalone
@@ -73,6 +76,7 @@ services:
     depends_on:
       - "etcd"
       - "minio"
+    restart: ${RESTART_POLICY:-no}
 
   attu:
     image: zilliz/attu:v2.5
@@ -84,29 +88,3 @@ services:
       MILVUS_URL: "http://milvus-standalone:19530"
     depends_on:
       - standalone
-    
-  mysql_db:
-    image: mysql:8.0
-    container_name: mysql_db
-    environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: usuarios_db
-    volumes:
-      - ./volumes/mysql_data/users:/var/lib/mysql
-    ports:
-      - "3306:3306"
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$MYSQL_ROOT_PASSWORD || exit 1"]
-
-  users_db:
-    build:
-      context: users/
-      dockerfile: Dockerfile
-    container_name: users_db
-    depends_on:
-      mysql_db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: mysql+pymysql://root:password@mysql_db:3306/usuarios_db
-    ports:
-      - "8009:8009"
