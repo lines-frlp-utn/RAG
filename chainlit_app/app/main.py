@@ -213,10 +213,6 @@ async def main(message: cl.Message):
             print(f"Generando embeddings de `{file.name}`...")
             embeddings = await cl.make_async(embedding_generator.get_embeddings)(chunks)
 
-            # Refinar los chunks según la similitud coseno
-            # print(f"Refinando chunks de `{file.name}`...")
-            # refined_chunks = refine_split_by_similarity(chunks, embeddings)
-
             # Formatear y cargar los embeddings en la base de datos
             print(f"Formateando embeddings de `{file.name}`...")
             embeddings_data = await cl.make_async(embedding_generator.format_for_database)(
