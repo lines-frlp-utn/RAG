@@ -5,7 +5,8 @@ from app.databases import get_context_from_db, post_embeddings, RetrieveData
 from app.embeddingGenerator import EmbeddingGenerator
 from app.models import get_conversational_answer
 from app.pdfExtractor import extract_text_from_pdf
-from app.splitter import split_markdown_text
+from app.splitter.markdown_splitter import split_markdown_text as markdown_split
+from app.splitter.semantic_splitter import split_semantic as semantic_split
 from langchain.memory import ConversationBufferMemory
 from chainlit.types import ThreadDict
 from app.auth import create_user, user_exists, UserExistsDTOResponse, Role
@@ -95,6 +96,15 @@ async def start():
                     "llama3.1",
                     "gemma3:1b",
                 ],
+                initial_index=0,
+            ),
+            Select(
+                id="splitter",
+                label="Tipo de splitter",
+                values=[
+                    "Markdown",
+                    "Semantico",
+                    ],
                 initial_index=0,
             ),
             Slider(
@@ -196,7 +206,7 @@ async def main(message: cl.Message):
     user = cl.user_session.get("user")
     session_number = cl.user_session.get("session_number")
     settings = cl.user_session.get("settings")
-    if message.elements and user.metadata["role"] == Role.ADMIN:
+    if message.elements and user.metadata["role"] == Role.CLIENTE:
         file = message.elements[0]
         # msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
         # await msg.send()
@@ -207,7 +217,16 @@ async def main(message: cl.Message):
 
             # Splittear el texto en chunks semánticos
             print(f"Splitteando texto de `{file.name}`...")
-            chunks = split_markdown_text(text)
+            splitter_type = settings.get("splitter", "Markdown").lower()
+
+            if splitter_type == "markdown":
+                chunks = markdown_split(text)
+            elif splitter_type == "semantico":
+                chunks = semantic_split(text)
+            else:
+                raise ValueError(f"Splitter desconocido: {splitter_type}")
+            
+            print(f"usando splitter `{splitter_type}`")
 
             # Generar los embeddings de los chunks
             print(f"Generando embeddings de `{file.name}`...")
