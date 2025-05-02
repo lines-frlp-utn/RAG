@@ -1,8 +1,7 @@
 import chainlit as cl
-from pydantic import BaseModel
 from app.aim_tracker import end_aim_run, start_aim_run
 from app.databases import get_context_from_db, post_embeddings, RetrieveData
-from app.embeddingGenerator import EmbeddingGenerator
+from app.embeddingGenerator import embedding_generator
 from app.models import get_conversational_answer
 from app.pdfExtractor import extract_text_from_pdf
 from app.splitter.markdown_splitter import split_markdown_text as markdown_split
@@ -13,8 +12,6 @@ from app.auth import create_user, user_exists, UserExistsDTOResponse, Role
 from chainlit.input_widget import Select, Slider
 from typing import Dict
 
-
-embedding_generator = EmbeddingGenerator()
 collection_name = "prueba_lines"
 
 
@@ -206,7 +203,7 @@ async def main(message: cl.Message):
     user = cl.user_session.get("user")
     session_number = cl.user_session.get("session_number")
     settings = cl.user_session.get("settings")
-    if message.elements and user.metadata["role"] == Role.ADMIN: # Esto requiere modificarse por Role.CLIENTE para utilisar la funcion de subir pdfs...
+    if message.elements and user.metadata["role"] == Role.CLIENTE: # Esto requiere modificarse por Role.CLIENTE para utilisar la funcion de subir pdfs...
         file = message.elements[0]
         # msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
         # await msg.send()

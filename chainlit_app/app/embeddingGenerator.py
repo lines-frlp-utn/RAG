@@ -46,3 +46,5 @@ class EmbeddingGenerator(Embeddings):
 
     def embed_query(self, text: str) -> list[float]:
         return self.get_embeddings([text])[0]
+
+embedding_generator = EmbeddingGenerator()
