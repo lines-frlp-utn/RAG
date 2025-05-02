@@ -4,8 +4,8 @@
 
     "service": "dev-chainlit-app",
     "runServices": ["dev-chainlit-app", "mysql_db", "users_db"
-    // ,"aim-server", "aim-ui", // AIM
-    // "etcd", "minio", "standalone", "attu" // MILVUS
+    // ,"aim-server", "aim-ui" // AIM
+    // ,"etcd", "minio", "standalone", "attu" // MILVUS
     ],
     "workspaceFolder": "/workspace/",
     "shutdownAction": "stopCompose",
