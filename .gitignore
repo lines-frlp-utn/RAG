@@ -163,4 +163,3 @@ cython_debug/
 
 volumes
 /vectordbs/Chroma/database/*
-chainlit_app/app/splitter/test/test_splitter.py
