@@ -1,6 +1,5 @@
 import hashlib
 import numpy as np
-from typing import List
 from openai import OpenAI
 from app.config import conf
 from langchain.embeddings.base import Embeddings  
@@ -20,7 +19,7 @@ class EmbeddingGenerator(Embeddings):
     def generate_id(self, text: str) -> int:
         return int(hashlib.md5(text.encode()).hexdigest(), 16) % (10**8)
 
-    def get_embeddings(self, texts: List[str]) -> List[List[float]]:
+    def get_embeddings(self, texts: list[str]) -> list[list[float]]:
         try:
             response = self.embedding_model.embeddings.create(
                 input=texts,
@@ -31,7 +30,7 @@ class EmbeddingGenerator(Embeddings):
             print(f"[Embedding Error] {e}")
             raise e
         
-    def format_for_database(self, embeddings: List[List[float]], chunks: List[str]) -> List[dict]:
+    def format_for_database(self, embeddings: list[list[float]], chunks: list[str]) -> list[dict]:
         result = []
         for text, emb in zip(chunks, embeddings):
             emb_list = np.array(emb).tolist()
@@ -39,11 +38,11 @@ class EmbeddingGenerator(Embeddings):
                 "id": self.generate_id(text),
                 "text": text,
                 "vector": emb_list
-            })
+            }) 
         return result
     
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
         return self.get_embeddings(texts)
 
-    def embed_query(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> list[float]:
         return self.get_embeddings([text])[0]
