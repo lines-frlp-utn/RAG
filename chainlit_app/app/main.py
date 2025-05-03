@@ -2,11 +2,11 @@ from typing import Dict
 
 import chainlit as cl
 from app.aim_tracker import end_aim_run, start_aim_run
-from app.auth import Role, UserExistsDTOResponse, create_user, user_exists
+from app.auth import Role, create_user, user_exists
 from app.databases import RetrieveData, get_context_from_db, post_embeddings
-from app.embeddingGenerator import embedding_generator
+from app.embedding_generator import embedding_generator
 from app.models import get_conversational_answer
-from app.pdfExtractor import extract_text_from_pdf
+from app.parser import extract_text_from_pdf
 from app.splitter.markdown_splitter import split_markdown_text as markdown_split
 from app.splitter.semantic_splitter import split_semantic as semantic_split
 from chainlit.input_widget import Select, Slider

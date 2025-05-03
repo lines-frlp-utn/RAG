@@ -15,4 +15,5 @@ class Settings(BaseSettings):
     OAUTH_GOOGLE_CLIENT_ID: str | None
     OAUTH_GOOGLE_CLIENT_SECRET: str | None
 
+
 conf = Settings()

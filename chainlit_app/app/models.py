@@ -9,10 +9,13 @@ llm = ChatOpenAI(
     api_key="none",
 )
 
-def get_conversational_answer(query, db_context, chat_history, aim_run, safe_context=None, **kwargs):
+
+def get_conversational_answer(
+    query, db_context, chat_history, aim_run, safe_context=None, **kwargs
+):
     # Usar safe_context si está disponible, de lo contrario formatear db_context
     tracking_context = safe_context if safe_context is not None else format_db_context(db_context)
-    
+
     track_param(
         aim_run,
         "llm_config",
@@ -23,7 +26,7 @@ def get_conversational_answer(query, db_context, chat_history, aim_run, safe_con
             "api_key": "none",
         },
     )
-    
+
     system_prompt = f"""Eres un asistente llamado lines-bot. Siempre vas a responder en español.
     El usuario no sabe que se te proporciona un contexto, no lo menciones.
     Para responder la consulta podes ayudarte con la informacion de contexto:
@@ -39,9 +42,10 @@ def get_conversational_answer(query, db_context, chat_history, aim_run, safe_con
     # Imprimir el prompt para depuración
     print(f"system prompt: {system_prompt}")
     track_text(aim_run, "system_prompt", system_prompt)
-    track_text(aim_run, "db_context_section", tracking_context)  # Usar el contexto seguro para tracking
+    track_text(
+        aim_run, "db_context_section", tracking_context
+    )  # Usar el contexto seguro para tracking
     track_text(aim_run, "user_prompt", query)
-
 
     answer = llm.invoke(chat_history, **kwargs)
     track_text(aim_run, "answer", answer.content)
@@ -55,10 +59,10 @@ def format_db_context(db_context):
     elif isinstance(db_context, list):
         context_lines = []
         for item in db_context:
-            if hasattr(item, 'text'):
+            if hasattr(item, "text"):
                 context_lines.append(str(item.text))
-            elif isinstance(item, dict) and 'text' in item:
-                context_lines.append(str(item['text']))
+            elif isinstance(item, dict) and "text" in item:
+                context_lines.append(str(item["text"]))
             elif isinstance(item, str):
                 context_lines.append(item)
         return "\n\n".join(context_lines) if context_lines else "No hay contexto disponible"

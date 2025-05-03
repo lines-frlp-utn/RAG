@@ -1,5 +1,5 @@
+from app.embedding_generator import embedding_generator
 from langchain_experimental.text_splitter import SemanticChunker
-from app.embeddingGenerator import embedding_generator
 
 # Parámetros de chunking
 DEFAULT_MAX_LENGTH = 4000
@@ -7,9 +7,10 @@ DEFAULT_MAX_LENGTH = 4000
 semantic_splitter = SemanticChunker(
     embeddings=embedding_generator,
     breakpoint_threshold_type="percentile",
-    breakpoint_threshold_amount=80.0, 
+    breakpoint_threshold_amount=80.0,
     min_chunk_size=100,
 )
+
 
 def split_semantic(
     text: str,

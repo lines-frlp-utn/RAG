@@ -2,9 +2,7 @@ import fastapi
 from pydantic import BaseModel
 from pymilvus import (
     AnnSearchRequest,
-    CollectionSchema,
     DataType,
-    FieldSchema,
     Function,
     FunctionType,
     MilvusClient,
@@ -101,6 +99,7 @@ def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
     res = client.insert(collection_name=collection_name, data=uploadData)
     print(f"Cargados con éxito: {res}")
 
+
 def get_context_with_filters(query_data: QueryData):
     print("ENTRANDO A LA FUNCION GET CONTEXT")
 
@@ -140,31 +139,31 @@ def get_context_with_filters(query_data: QueryData):
 
     retrieve_data_list = []
     for hit in res[0]:
-            hit_id = hit.get('id', 'unknown')
-            distance = hit.get('distance', -1)
-            text = hit.get('entity', {}).get('text', 'not text found')
-            retrieve_data_list.append(
-                RetrieveData(
-                    id=str(hit_id),
-                    text=str(text).strip(),
-                    metadata={
-                        "search_metadata": {
-                            "distance": float(distance) if distance is not None else -1
-                        }
-                    }
-                )
+        hit_id = hit.get("id", "unknown")
+        distance = hit.get("distance", -1)
+        text = hit.get("entity", {}).get("text", "not text found")
+        retrieve_data_list.append(
+            RetrieveData(
+                id=str(hit_id),
+                text=str(text).strip(),
+                metadata={
+                    "search_metadata": {"distance": float(distance) if distance is not None else -1}
+                },
             )
+        )
     print(f"Resultados de búsqueda: {retrieve_data_list}")
     return retrieve_data_list
+
 
 @app.post("/upload-embeddings")
 def upload(data: EmbeddingData):
     upload_pdf_to_vector_db(data.dataWithEmbeddings, data.collection_name)
     return {"status": "success"}
 
+
 @app.post("/get-context")
 def get_context(query_data: QueryData) -> list[RetrieveData]:
-    results= get_context_with_filters(query_data)
+    results = get_context_with_filters(query_data)
     if not results:
         return {"status": "No se encontraron resultados"}
     return results

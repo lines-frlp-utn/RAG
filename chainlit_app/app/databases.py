@@ -2,10 +2,12 @@ import requests
 from app.config import conf
 from pydantic import BaseModel
 
+
 class RetrieveData(BaseModel):
     id: str
     text: str
     metadata: dict
+
 
 def post_embeddings(dataWithEmbeddings, collection_name):
     print("collection name: " + collection_name)
@@ -34,5 +36,5 @@ def get_context_from_db(collection_name, query, query_embedding) -> list[Retriev
         raise Exception(f"Error: {response.status_code} - {response.text}")
     else:
         print("Request successful")
-        results=response.json()
+        results = response.json()
         return [RetrieveData.model_validate(result) for result in results]

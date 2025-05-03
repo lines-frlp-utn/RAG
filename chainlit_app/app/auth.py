@@ -1,14 +1,19 @@
+from enum import Enum
+
 import requests
 from app.config import conf
 from pydantic import BaseModel
-from enum import Enum
+
 
 class Role(str, Enum):
     ADMIN = "ADMIN"
     CLIENTE = "CLIENTE"
+
+
 class UserExistsDTOResponse(BaseModel):
     exists: bool
     role_name: Role | None
+
 
 def user_exists(userIdentifier: str, password: str):
     print(f"user: {userIdentifier} ¿exists?")
@@ -22,7 +27,8 @@ def user_exists(userIdentifier: str, password: str):
         user = UserExistsDTOResponse(**data)
         return user
 
-def create_user(userIdentifier, role, password, providerId='', email='', picture=''):
+
+def create_user(userIdentifier, role, password, providerId="", email="", picture=""):
     print(f"userIdentifier: {userIdentifier}")
     print(f"role: {role}")
     response = requests.post(
@@ -33,12 +39,14 @@ def create_user(userIdentifier, role, password, providerId='', email='', picture
             "password": password or "",
             "auth_provider": providerId,
             "email": email or "",
-            "picture":picture
-        }
+            "picture": picture,
+        },
     )
     if response.status_code != 200:
         print(f"Error: {response.status_code} - {response.text}")
         return None
     else:
-        print(f"Request successful - user created successfully {response.status_code} - {response.text}")
+        print(
+            f"Request successful - user created successfully {response.status_code} - {response.text}"
+        )
         return response.text

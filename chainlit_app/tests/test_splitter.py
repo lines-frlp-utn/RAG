@@ -1,13 +1,11 @@
-import sys
 import os
+import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import pymupdf4llm
-from chainlit_app.app.embeddingGenerator import EmbeddingGenerator
+from app.embedding_generator import EmbeddingGenerator
 from langchain_experimental.text_splitter import SemanticChunker
-
-
 
 embedding_generator = EmbeddingGenerator()
 
@@ -19,9 +17,11 @@ semantic_splitter = SemanticChunker(
     min_chunk_size=100,
 )
 
+
 # Función para extraer el texto de un PDF
 def extract_text_from_pdf(pdf_path):
     return pymupdf4llm.to_markdown(pdf_path)
+
 
 # Función para dividir el texto usando el splitter semántico
 def split_semantic(text: str, max_length: int = 4000) -> list[str]:
@@ -33,6 +33,7 @@ def split_semantic(text: str, max_length: int = 4000) -> list[str]:
             final_chunks.append(chunk)
     return final_chunks
 
+
 # Ejecutar test
 if __name__ == "__main__":
     pdf_path = "/workspace/chainlit_app/tests/pdfs_prueba/bitcoin_es.pdf"
@@ -42,5 +43,5 @@ if __name__ == "__main__":
         print(f"\n--- Chunk {i + 1} ---\n{chunk[:300]}...")
 
 
-#para ejecutar el test:
+# para ejecutar el test:
 # python -m chainlit_app.tests.test_splitter

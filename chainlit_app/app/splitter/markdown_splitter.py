@@ -56,4 +56,3 @@ def split_markdown_text(text, max_length=1000, chunk_overlap=200) -> list[str]:
     for i, chunk in enumerate(final_chunks):
         print(f"Chunk {i + 1} length: {len(chunk)}")
     return final_chunks
-
