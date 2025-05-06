@@ -15,6 +15,7 @@ Base = declarative_base()
 
 
 class UserCreateDTO(BaseModel):
+    name: str
     identifier: str
     password: str  # puede ser vacio si es OAuth
     role_name: str
@@ -32,13 +33,13 @@ class Role(Base):
     __tablename__ = "roles"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), unique=True, nullable=False)
-
     users = relationship("Usuario", back_populates="role")
 
 
 class Usuario(Base):
     __tablename__ = "usuarios"
     id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), nullable=False)
     identifier = Column(String(50), unique=True, index=True, nullable=False)
     password = Column(String(50), nullable=True)  # Puede ser NULL si es OAuth
     auth_provider = Column(String(50), nullable=False, default="credentials")
@@ -83,6 +84,7 @@ def add_column_if_not_exists(db: Session, table_name: str, column_name: str, col
 def startup_event():
     db = SessionLocal()
     init_roles(db)
+    add_column_if_not_exists(db, "usuarios", "name", "VARCHAR(50)")
     add_column_if_not_exists(db, "usuarios", "email", "VARCHAR(50)")
     add_column_if_not_exists(db, "usuarios", "auth_provider", "VARCHAR(50)")
     add_column_if_not_exists(db, "usuarios", "picture", "VARCHAR(100)")
@@ -112,6 +114,7 @@ async def create_user(user: UserCreateDTO, db: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="User already exists")
     new_user = Usuario(
+        name=user.name,
         identifier=user.identifier,
         role_id=role.id,
         password=user.password or "",
@@ -123,6 +126,7 @@ async def create_user(user: UserCreateDTO, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     return UserCreateDTO(
+        name=new_user.name,
         identifier=new_user.identifier,
         role_name=role.name,
         password=new_user.password,
@@ -144,5 +148,5 @@ async def update_user_role(identifier: str, role: str, db: Session = Depends(get
     db.commit()
     db.refresh(user)
     return UserCreateDTO(
-        identifier=user.identifier, role_name=new_role.name, password=user.password
+        name=user.name, identifier=user.identifier, role_name=new_role.name, password=user.password
     )

@@ -28,12 +28,13 @@ def user_exists(userIdentifier: str, password: str):
         return user
 
 
-def create_user(userIdentifier, role, password, providerId="", email="", picture=""):
+def create_user(userIdentifier, role, password, providerId="", email="", picture="", name=""):
     print(f"userIdentifier: {userIdentifier}")
     print(f"role: {role}")
     response = requests.post(
         f"{conf.USERS_API_URL}:{conf.USERS_API_PORT}/users/create",
         json={
+            "name": name,
             "identifier": userIdentifier,
             "role_name": role,
             "password": password or "",

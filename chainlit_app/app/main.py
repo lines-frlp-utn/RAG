@@ -26,11 +26,12 @@ def auth_callback(username: str, password: str):
     if username and password:
         user = user_exists(username, password)
         if user.exists is False:
-            user = create_user(username, Role.CLIENTE, password)
+            user = create_user(username, Role.CLIENTE, password, name=username)
             if user:
                 print(f"User created: {username}")
                 return cl.User(
-                    identifier=username, metadata={"role": Role.CLIENTE, "provider": "credentials"}
+                    identifier=username,
+                    metadata={"role": Role.CLIENTE, "provider": "credentials", "display_name": username}
                 )
             else:
                 print(f"Error creating user: {username}")
@@ -38,7 +39,8 @@ def auth_callback(username: str, password: str):
         else:
             print(f"User exists: {user}")
             return cl.User(
-                identifier=username, metadata={"role": user.role_name, "provider": "credentials"}
+                identifier=username,
+                metadata={"role": user.role_name, "provider": "credentials", "display_name": username}
             )
     else:
         return None
@@ -51,18 +53,19 @@ def oauth_callback(
     raw_user_data: Dict[str, str],
 ):
     email = raw_user_data.get("email")
-    name = raw_user_data.get("name", "")
+    display_name = raw_user_data.get("name", "")
     picture = raw_user_data.get("picture", "")
 
     if not email:
         print("OAuth callback: Email no proporcionado")
         return None
     try:
-        user = user_exists(name, "")  ##
+        user = user_exists(email, "")
         if not user or user.exists is False:
             print("Usuario no existe, creando con OAuth")
-            created = create_user(name, Role.CLIENTE, "", provider_id, email, picture)  ##
-            role = Role.CLIENTE if created else None
+            created = create_user(email, Role.CLIENTE, "", provider_id, email, picture, name=display_name)
+            if created:
+                role = Role.CLIENTE
         else:
             print("Usuario encontrado")
             role = user.role_name
@@ -72,11 +75,11 @@ def oauth_callback(
         return None
 
     return cl.User(
-        identifier=name,
+        identifier=email,
         metadata={
             "role": role,
             "provider": provider_id,
-            # "picture": picture,
+            "display_name": display_name
         },
     )
 
@@ -127,7 +130,8 @@ async def start():
     ).send()
 
     if app_user:
-        msg = cl.Message(content=f"¡Hola, {app_user.identifier}! ¿En qué puedo ayudarte hoy?")
+        display_name = app_user.metadata.get("display_name", app_user.identifier)
+        msg = cl.Message(content=f"¡Hola, {display_name}! ¿En qué puedo ayudarte hoy?")
         await msg.send()
     else:
         cl.Message(
