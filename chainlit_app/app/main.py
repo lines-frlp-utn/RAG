@@ -217,7 +217,7 @@ async def main(message: cl.Message):
     session_number = cl.user_session.get("session_number")
     settings = cl.user_session.get("settings")
     if (
-        message.elements and user.metadata["role"] == Role.ADMIN
+        message.elements and user.metadata["role"] == Role.CLIENTE
     ):  # Esto requiere modificarse por Role.CLIENTE para utilisar la funcion de subir pdfs...
         file = message.elements[0]
         # msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
