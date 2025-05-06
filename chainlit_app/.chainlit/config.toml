@@ -61,7 +61,7 @@ login_page_image = "../public/login_image.jpg"
 login_page_image_filter = ""
 login_page_image_dark_filter = ""
 
-default_theme = "dark"
+default_theme = "light"
 
 # layout = "wide"
 
