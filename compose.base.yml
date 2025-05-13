@@ -30,7 +30,7 @@ services:
 
   
   aim-server:
-    image: aimstack/aim:3.28.0
+    image: aimstack/aim:3.29.1
     command: server --host 0.0.0.0
     container_name: aim_server
     environment:
@@ -42,7 +42,7 @@ services:
     restart: ${RESTART_POLICY:-no}
 
   aim-ui:
-    image: aimstack/aim:3.28.0
+    image: aimstack/aim:3.29.1
     command: up --host 0.0.0.0
     container_name: aim_ui
     environment:
