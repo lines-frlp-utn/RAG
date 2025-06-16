@@ -163,7 +163,11 @@ def upload(data: EmbeddingData):
 
 @app.post("/get-context")
 def get_context(query_data: QueryData) -> list[RetrieveData]:
-    results = get_context_with_filters(query_data)
+    try:
+        results = get_context_with_filters(query_data)
+    except Exception as e:
+        print(f"Error al obtener el contexto: {e}")
+        return []
     if not results:
-        return {"status": "No se encontraron resultados"}
+        return []
     return results
