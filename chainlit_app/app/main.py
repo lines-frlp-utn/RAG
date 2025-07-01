@@ -31,7 +31,11 @@ def auth_callback(username: str, password: str):
                 print(f"User created: {username}")
                 return cl.User(
                     identifier=username,
-                    metadata={"role": Role.CLIENTE, "provider": "credentials", "display_name": username}
+                    metadata={
+                        "role": Role.CLIENTE,
+                        "provider": "credentials",
+                        "display_name": username,
+                    },
                 )
             else:
                 print(f"Error creating user: {username}")
@@ -40,7 +44,11 @@ def auth_callback(username: str, password: str):
             print(f"User exists: {user}")
             return cl.User(
                 identifier=username,
-                metadata={"role": user.role_name, "provider": "credentials", "display_name": username}
+                metadata={
+                    "role": user.role_name,
+                    "provider": "credentials",
+                    "display_name": username,
+                },
             )
     else:
         return None
@@ -63,7 +71,9 @@ def oauth_callback(
         user = user_exists(email, "")
         if not user or user.exists is False:
             print("Usuario no existe, creando con OAuth")
-            created = create_user(email, Role.CLIENTE, "", provider_id, email, picture, name=display_name)
+            created = create_user(
+                email, Role.CLIENTE, "", provider_id, email, picture, name=display_name
+            )
             if created:
                 role = Role.CLIENTE
         else:
@@ -76,11 +86,7 @@ def oauth_callback(
 
     return cl.User(
         identifier=email,
-        metadata={
-            "role": role,
-            "provider": provider_id,
-            "display_name": display_name
-        },
+        metadata={"role": role, "provider": provider_id, "display_name": display_name},
     )
 
 
@@ -176,6 +182,70 @@ async def vectordb_results_step(query: str):
     return context
 
 
+@cl.step
+async def should_refine_step(query: str, context: str) -> bool:
+    settings = cl.user_session.get("settings")  # Obtener settings
+    prompt = f"""
+Eres un evaluador estricto de contexto. Tu trabajo es determinar si el contexto proporcionado contiene información ESPECÍFICA y DIRECTA para responder la pregunta del usuario.
+
+Pregunta del usuario:
+{query}
+
+Contexto recuperado:
+{context}
+
+CRITERIOS ESTRICTOS:
+- El contexto debe contener información DIRECTAMENTE relacionada con la pregunta
+- No debe ser información genérica o tangencial
+- Debe permitir dar una respuesta específica y completa
+- Si la información es vaga, incompleta o no responde directamente, el contexto es INSUFICIENTE
+
+¿El contexto es SUFICIENTE para responder ESPECÍFICAMENTE esta pregunta?
+
+Responde ÚNICAMENTE "Sí" o "No". Sé estricto en tu evaluación.
+"""
+    respuesta = await cl.make_async(get_conversational_answer)(
+        prompt,
+        "",
+        cl.chat_context.to_openai(),
+        cl.user_session.get("aim_run"),
+        model=settings["model"],  # Usar modelo de settings
+        temperature=0,
+        frequency_penalty=settings["frequency_penalty"],  # Usar frequency_penalty de settings
+    )
+    print("Evaluación de contexto:", respuesta)
+    return "no" in respuesta.lower()
+
+
+@cl.step
+async def refine_query_step(query: str, context: str) -> str:
+    settings = cl.user_session.get("settings")
+    prompt = f"""
+La siguiente pregunta del usuario fue formulada de forma poco precisa, y el contexto recuperado no permitió responderla correctamente.
+
+Pregunta original:
+{query}
+
+Contexto insuficiente:
+{context}
+
+Reformulá la pregunta para que sea más clara, específica y orientada a recuperar mejor información desde una base de datos de conocimiento técnico.
+
+Nueva pregunta:
+"""
+    refined_query = await cl.make_async(get_conversational_answer)(
+        prompt,
+        "",
+        cl.chat_context.to_openai(),
+        cl.user_session.get("aim_run"),
+        model=settings["model"],
+        temperature=settings["temperature"],
+        frequency_penalty=settings["frequency_penalty"],
+    )
+    print("Query refinada:", refined_query)
+    return refined_query.strip()
+
+
 async def context_step(results: list[RetrieveData]) -> str:
     """Procesa resultados de bases vectoriales (siempre lista)"""
 
@@ -200,6 +270,31 @@ async def context_step(results: list[RetrieveData]) -> str:
 
 
 @cl.step
+async def generate_rag_diagnostics(
+    query: str,
+    refined_query: str | None,
+    iteraciones: int,
+    contexto_utilizado: str,
+) -> str:
+    refinado = "✅ Sí" if refined_query else "❌ No"
+    query_mostrada = refined_query if refined_query else query
+
+    resumen = (
+        f"🔎 **Resumen del proceso de búsqueda y respuesta**\n\n"
+        f"- ❓ **Consulta original:** `{query}`\n"
+        f"- 🔁 **¿Se refinó la pregunta?** {refinado}\n"
+        f"- 🔂 **Iteraciones realizadas:** {iteraciones}\n"
+        f"- 🧠 **Consulta final usada para buscar en la base:** `{query_mostrada}`\n\n"
+        f"📚 **Fragmento del contexto utilizado:**\n"
+        f"```text\n"
+        f"{contexto_utilizado[:500]}...\n"
+        f"```\n\n"
+        f"💡 Si no obtuviste la respuesta esperada, probá reformular la consulta manualmente."
+    )
+    return resumen
+
+
+@cl.step
 async def llm_step(query, context, **kwargs):
     chat_context = cl.chat_context.to_openai()
     print(f"Chat context: {chat_context}")
@@ -216,63 +311,80 @@ async def main(message: cl.Message):
     user = cl.user_session.get("user")
     session_number = cl.user_session.get("session_number")
     settings = cl.user_session.get("settings")
-    if (
-        message.elements and user.metadata["role"] == Role.CLIENTE
-    ):  # Esto requiere modificarse por Role.CLIENTE para utilisar la funcion de subir pdfs...
+
+    if message.elements and user.metadata["role"] == Role.CLIENTE:
         file = message.elements[0]
-        # msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
-        # await msg.send()
         try:
-            # Extraer el texto del PDF
             print(f"Extrayendo texto de `{file.name}`...")
             text = extract_text_from_pdf(file.path)
-
-            # Splittear el texto en chunks semánticos
-            print(f"Splitteando texto de `{file.name}`...")
             splitter_type = settings.get("splitter", "Markdown").lower()
-
+            print(f"Splitteando texto de `{file.name}`...")
             if splitter_type == "markdown":
                 chunks = markdown_split(text)
             elif splitter_type == "semantico":
                 chunks = semantic_split(text)
             else:
                 raise ValueError(f"Splitter desconocido: {splitter_type}")
-
             print(f"usando splitter `{splitter_type}`")
-
-            # Generar los embeddings de los chunks
             print(f"Generando embeddings de `{file.name}`...")
             embeddings = await cl.make_async(embedding_generator.get_embeddings)(chunks)
-
-            # Formatear y cargar los embeddings en la base de datos
             print(f"Formateando embeddings de `{file.name}`...")
             embeddings_data = await cl.make_async(embedding_generator.format_for_database)(
                 embeddings, chunks
             )
-            print("Embeddings formateados")
             result = await cl.make_async(post_embeddings)(
                 collection_name=collection_name, dataWithEmbeddings=embeddings_data
             )
             print(f"Archivo `{file.name}` cargado exitosamente, `{result}`")
-            # msg.content = f"Archivo `{file.name}` cargado exitosamente, `{result}`"
         except Exception as e:
-            # msg.content = f"Error procesando el archivo `{file.name}`: {str(e)}"
             print(f"Error procesando el archivo `{file.name}`: {str(e)}")
 
-    msg = cl.Message(content="")  # Solo muestra el loader si no se envió otro mensaje
+    msg = cl.Message(content="")
     await msg.send()
 
     query = message.content
     context = await vectordb_results_step(query)
-    kwargs = {
-        "model": settings["model"],
-        "temperature": settings["temperature"],
-        "frequency_penalty": settings["frequency_penalty"],
-    }
-    respuesta = await llm_step(query=query, context=context, **kwargs)
-    msg.content = f"{respuesta}"
 
-    await msg.update()  # Actualizamos el mensaje con los nuevos datos
+    # Evaluar si hace falta refinar
+    refine_needed = await should_refine_step(query, context)
+
+    if refine_needed:
+        refined_query = await refine_query_step(query, context)
+        context = await vectordb_results_step(refined_query)
+        still_bad = await should_refine_step(refined_query, context)
+
+        if still_bad:
+            respuesta = "❌ No puedo responder esa consulta con la información disponible en la base de conocimiento."
+            refined_query = None
+            iterations = 2
+        else:
+            kwargs = {
+                "model": settings["model"],
+                "temperature": settings["temperature"],
+                "frequency_penalty": settings["frequency_penalty"],
+            }
+            respuesta = await llm_step(query=refined_query, context=context, **kwargs)
+            iterations = 2
+    else:
+        kwargs = {
+            "model": settings["model"],
+            "temperature": settings["temperature"],
+            "frequency_penalty": settings["frequency_penalty"],
+        }
+        respuesta = await llm_step(query=query, context=context, **kwargs)
+        refined_query = None
+        iterations = 1
+
+    msg.content = f"{respuesta}"
+    await msg.update()
+
+    # Generar el diagnóstico RAG (se mostrará automáticamente como step)
+    await generate_rag_diagnostics(
+        query=query,
+        refined_query=refined_query,
+        iteraciones=iterations,
+        contexto_utilizado=context,
+    )
 
     memory.chat_memory.add_user_message(message.content)
     memory.chat_memory.add_ai_message(msg.content)
