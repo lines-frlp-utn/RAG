@@ -15,12 +15,6 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-#Verifico las tablas
-def list_tables():
-    inspector = inspect(engine)
-    tables = inspector.get_table_names()
-    print("Tablas en la base de datos:", tables)
-
 
 
 class UserCreateDTO(BaseModel):
@@ -59,7 +53,7 @@ class Usuario(Base):
 class Thread(Base):    
     __tablename__ = "threads"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("usuarios.identifier"), nullable=False) 
 
     user = relationship("Usuario", back_populates="threads")
     messages = relationship("Message", back_populates="thread")
@@ -98,6 +92,7 @@ def add_column_if_not_exists(db: Session, table_name: str, column_name: str, col
         db.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"))
         db.commit()
 
+#Endpoints usuarios
 @app.on_event("startup")
 def startup_event():
     db = SessionLocal()
@@ -156,5 +151,33 @@ async def update_user_role(identifier: str, role: str, db: Session = Depends(get
     return UserCreateDTO(identifier=user.identifier, role_name=new_role.name, password=user.password)
 
 
-# Llama a la función
-list_tables()
+##Endpoints threads
+@app.post("/threads/create/{identifier}")
+async def create_thread(identifier: str, db: Session = Depends(get_db)):
+    user = db.query(Usuario).filter(Usuario.identifier == identifier).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found")
+    new_thread = Thread(user_id=user.id)
+    db.add(new_thread)
+    db.commit()
+    db.refresh(new_thread)
+    return {"thread_id": new_thread.id, "user_id": user.id}
+
+@app.post("/threads/message/{thread_id}")
+async def create_message(thread_id: int, message: str, db: Session = Depends(get_db)):
+    thread = db.query(Thread).filter(Thread.id == thread_id).first()
+    if not thread:
+        raise HTTPException(status_code=400, detail="Thread not found")
+    new_message = Message(thread_id=thread.id, content=message)
+    db.add(new_message)
+    db.commit()
+    db.refresh(new_message)
+    return {"message_id": new_message.id, "thread_id": thread.id}
+
+@app.get("/threads/{identifier}")
+async def get_threads(identifier: str, db: Session = Depends(get_db)):
+    user = db.query(Usuario).filter(Usuario.identifier == identifier).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found")
+    threads = db.query(Thread).filter(Thread.user_id == user.id).all()
+    return [{"thread_id": thread.id, "user_id": thread.user_id} for thread in threads]
