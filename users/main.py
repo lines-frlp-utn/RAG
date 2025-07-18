@@ -5,12 +5,23 @@ from sqlalchemy.orm import sessionmaker, Session, relationship
 import os
 from pydantic import BaseModel
 
+
+
+
 app = FastAPI()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "mysql+pymysql://root:password@mysql_db:3306/usuarios_db")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+#Verifico las tablas
+def list_tables():
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+    print("Tablas en la base de datos:", tables)
+
+
 
 class UserCreateDTO(BaseModel):
     identifier: str
@@ -40,8 +51,26 @@ class Usuario(Base):
     email = Column(String(50), unique=True, nullable=True)
     picture = Column(String(100), nullable=True)
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
-
+    
+    threads = relationship("Thread", back_populates="user")
     role = relationship("Role", back_populates="users")
+
+
+class Thread(Base):    
+    __tablename__ = "threads"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+
+    user = relationship("Usuario", back_populates="threads")
+    messages = relationship("Message", back_populates="thread")
+
+class Message(Base):
+    __tablename__ = "messages"
+    id = Column(Integer, primary_key=True, index=True)
+    thread_id = Column(Integer, ForeignKey("threads.id"), nullable=False)
+    content = Column(String(500), nullable=False)
+
+    thread = relationship("Thread", back_populates="messages")
 
 # Crear las tablas que no estan creadas
 Base.metadata.create_all(bind=engine)
@@ -125,3 +154,7 @@ async def update_user_role(identifier: str, role: str, db: Session = Depends(get
     db.commit()
     db.refresh(user)
     return UserCreateDTO(identifier=user.identifier, role_name=new_role.name, password=user.password)
+
+
+# Llama a la función
+list_tables()
