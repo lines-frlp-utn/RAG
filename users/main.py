@@ -63,6 +63,7 @@ class Message(Base):
     id = Column(Integer, primary_key=True, index=True)
     thread_id = Column(Integer, ForeignKey("threads.id"), nullable=False)
     content = Column(String(500), nullable=False)
+    sender = Column(String(50), nullable=False)
 
     thread = relationship("Thread", back_populates="messages")
 
@@ -151,7 +152,10 @@ async def update_user_role(identifier: str, role: str, db: Session = Depends(get
     return UserCreateDTO(identifier=user.identifier, role_name=new_role.name, password=user.password)
 
 
-##Endpoints threads
+##Endpoints threads :)
+class MessageRequest(BaseModel):
+    message: str
+##Creamos hilo
 @app.post("/threads/create/{identifier}")
 async def create_thread(identifier: str, db: Session = Depends(get_db)):
     user = db.query(Usuario).filter(Usuario.identifier == identifier).first()
@@ -163,21 +167,29 @@ async def create_thread(identifier: str, db: Session = Depends(get_db)):
     db.refresh(new_thread)
     return {"thread_id": new_thread.id, "user_id": user.id}
 
+##Agregamos mensaje a un hilo
 @app.post("/threads/message/{thread_id}")
-async def create_message(thread_id: int, message: str, db: Session = Depends(get_db)):
+async def create_message(thread_id: int,sender : str, request: MessageRequest, db: Session = Depends(get_db)):
     thread = db.query(Thread).filter(Thread.id == thread_id).first()
     if not thread:
         raise HTTPException(status_code=400, detail="Thread not found")
-    new_message = Message(thread_id=thread.id, content=message)
-    db.add(new_message)
+    new_message = Message(thread_id=thread.id, content=request.message, sender = sender)  
     db.commit()
     db.refresh(new_message)
     return {"message_id": new_message.id, "thread_id": thread.id}
-
+##Obtenemos los hilos de un usuario!!!
 @app.get("/threads/{identifier}")
 async def get_threads(identifier: str, db: Session = Depends(get_db)):
     user = db.query(Usuario).filter(Usuario.identifier == identifier).first()
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
     threads = db.query(Thread).filter(Thread.user_id == user.id).all()
-    return [{"thread_id": thread.id, "user_id": thread.user_id} for thread in threads]
+    return [{"thread_id": thread.id} for thread in threads]
+##Obtenemos los mensajes de un hilo
+@app.get("/threads/messages/{thread_id}")
+async def get_messages(thread_id: int, db: Session = Depends(get_db)):
+    thread = db.query(Thread).filter(Thread.id == thread_id).first()
+    if not thread:
+        raise HTTPException(status_code=400, detail="Thread not found")
+    messages = db.query(Message).filter(Message.thread_id == thread.id).all()
+    return [{"message_id": message.id, "content": message.content, "sender": message.sender} for message in messages]
