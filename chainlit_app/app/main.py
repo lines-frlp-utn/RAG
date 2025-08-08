@@ -31,7 +31,11 @@ def auth_callback(username: str, password: str):
                 print(f"User created: {username}")
                 return cl.User(
                     identifier=username,
-                    metadata={"role": Role.CLIENTE, "provider": "credentials", "display_name": username}
+                    metadata={
+                        "role": Role.CLIENTE,
+                        "provider": "credentials",
+                        "display_name": username,
+                    },
                 )
             else:
                 print(f"Error creating user: {username}")
@@ -40,7 +44,11 @@ def auth_callback(username: str, password: str):
             print(f"User exists: {user}")
             return cl.User(
                 identifier=username,
-                metadata={"role": user.role_name, "provider": "credentials", "display_name": username}
+                metadata={
+                    "role": user.role_name,
+                    "provider": "credentials",
+                    "display_name": username,
+                },
             )
     else:
         return None
@@ -63,7 +71,9 @@ def oauth_callback(
         user = user_exists(email, "")
         if not user or user.exists is False:
             print("Usuario no existe, creando con OAuth")
-            created = create_user(email, Role.CLIENTE, "", provider_id, email, picture, name=display_name)
+            created = create_user(
+                email, Role.CLIENTE, "", provider_id, email, picture, name=display_name
+            )
             if created:
                 role = Role.CLIENTE
         else:
@@ -76,11 +86,7 @@ def oauth_callback(
 
     return cl.User(
         identifier=email,
-        metadata={
-            "role": role,
-            "provider": provider_id,
-            "display_name": display_name
-        },
+        metadata={"role": role, "provider": provider_id, "display_name": display_name},
     )
 
 
@@ -97,7 +103,7 @@ async def start():
                 label="model",
                 values=[
                     "llama3.1",
-                    "gemma3:1b",
+                    "qwen2.5vl",
                 ],
                 initial_index=0,
             ),
