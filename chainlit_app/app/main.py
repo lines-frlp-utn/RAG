@@ -26,34 +26,40 @@ def format_docs(docs):
 # Callback de autenticación
 @cl.password_auth_callback
 def auth_callback(username: str, password: str):
-    if username and password:
-        user = user_exists(username, password)
-        if user.exists is False:
-            user = create_user(username, Role.CLIENTE, password, name=username)
-            if user:
-                print(f"User created: {username}")
+    try:
+        if username and password:
+            user = user_exists(username, password)
+            if user and user.exists is False:
+                user = create_user(username, Role.CLIENTE, password, name=username)
+                if user:
+                    print(f"User created: {username}")
+                    return cl.User(
+                        identifier=username,
+                        metadata={
+                            "role": Role.CLIENTE,
+                            "provider": "credentials",
+                            "display_name": username,
+                        },
+                    )
+                else:
+                    print(f"Error creating user: {username}")
+                    return None
+            elif user and user.exists:
+                print(f"User exists: {user}")
                 return cl.User(
                     identifier=username,
                     metadata={
-                        "role": Role.CLIENTE,
+                        "role": user.role_name,
                         "provider": "credentials",
                         "display_name": username,
                     },
                 )
             else:
-                print(f"Error creating user: {username}")
                 return None
         else:
-            print(f"User exists: {user}")
-            return cl.User(
-                identifier=username,
-                metadata={
-                    "role": user.role_name,
-                    "provider": "credentials",
-                    "display_name": username,
-                },
-            )
-    else:
+            return None
+    except Exception as e:
+        print(f"Exception in auth_callback: {e}")
         return None
 
 
