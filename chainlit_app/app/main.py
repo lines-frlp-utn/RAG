@@ -12,6 +12,7 @@ from app.splitter.semantic_splitter import split_semantic as semantic_split
 from chainlit.input_widget import Select, Slider
 from chainlit.types import ThreadDict
 from langchain.memory import ConversationBufferMemory
+from app.langgraph_flow import app as langgraph_app
 
 collection_name = "prueba_lines"
 
@@ -269,14 +270,19 @@ async def main(message: cl.Message):
     await msg.send()
 
     query = message.content
-    context = await vectordb_results_step(query)
-    kwargs = {
+    state = {
+    "question": query,
+    "context": None,
+    "answer": None,
+    "grounded": None,
+    "settings": {
         "model": settings["model"],
         "temperature": settings["temperature"],
         "frequency_penalty": settings["frequency_penalty"],
+        }
     }
-    respuesta = await llm_step(query=query, context=context, **kwargs)
-    msg.content = f"{respuesta}"
+    result = await langgraph_app.ainvoke(state)
+    msg.content = result["answer"]
 
     await msg.update()  # Actualizamos el mensaje con los nuevos datos
 

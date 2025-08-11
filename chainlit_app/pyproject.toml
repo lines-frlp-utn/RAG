@@ -19,4 +19,5 @@ dependencies = [
     "pymupdf4llm>=0.0.17",
     "aim>=3.28.0",
     "chainlit>=2.4.302",
+    "langgraph",
 ]
