@@ -1,5 +1,4 @@
 import os
-
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import Column, ForeignKey, Integer, String, create_engine, inspect, text
@@ -54,7 +53,7 @@ class Usuario(Base):
 class Thread(Base):    
     __tablename__ = "threads"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("usuarios.identifier"), nullable=False) 
+    user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False) 
 
     user = relationship("Usuario", back_populates="threads")
     messages = relationship("Message", back_populates="thread")
@@ -63,7 +62,7 @@ class Message(Base):
     __tablename__ = "messages"
     id = Column(Integer, primary_key=True, index=True)
     thread_id = Column(Integer, ForeignKey("threads.id"), nullable=False)
-    content = Column(String(500), nullable=False)
+    content = Column(String(5000), nullable=False)  # Aumentado de 500 a 5000 caracteres
     sender = Column(String(50), nullable=False)
 
     thread = relationship("Thread", back_populates="messages")
@@ -106,6 +105,14 @@ def startup_event():
     add_column_if_not_exists(db, "usuarios", "email", "VARCHAR(50)")
     add_column_if_not_exists(db, "usuarios", "auth_provider", "VARCHAR(50)")
     add_column_if_not_exists(db, "usuarios", "picture", "VARCHAR(100)")
+
+    # Esto es para que no se rompa todo si la respuesta del LLM es muy larga
+    try:
+        db.execute(text("ALTER TABLE messages MODIFY COLUMN content VARCHAR(5000)"))
+        db.commit()
+    except Exception as e:
+        db.rollback()
+    
     db.close()
 
 
@@ -192,9 +199,11 @@ async def create_message(thread_id: int,sender : str, request: MessageRequest, d
     if not thread:
         raise HTTPException(status_code=400, detail="Thread not found")
     new_message = Message(thread_id=thread.id, content=request.message, sender = sender)  
+    db.add(new_message)
     db.commit()
     db.refresh(new_message)
     return {"message_id": new_message.id, "thread_id": thread.id}
+
 ##Obtenemos los hilos de un usuario!!!
 @app.get("/threads/{identifier}")
 async def get_threads(identifier: str, db: Session = Depends(get_db)):
@@ -203,6 +212,7 @@ async def get_threads(identifier: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="User not found")
     threads = db.query(Thread).filter(Thread.user_id == user.id).all()
     return [{"thread_id": thread.id} for thread in threads]
+
 ##Obtenemos los mensajes de un hilo
 @app.get("/threads/messages/{thread_id}")
 async def get_messages(thread_id: int, db: Session = Depends(get_db)):

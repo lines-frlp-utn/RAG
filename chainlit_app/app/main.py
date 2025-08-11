@@ -12,6 +12,8 @@ from app.splitter.semantic_splitter import split_semantic as semantic_split
 from chainlit.input_widget import Select, Slider
 from chainlit.types import ThreadDict
 from langchain.memory import ConversationBufferMemory
+import httpx
+from app.config import conf
 
 collection_name = "prueba_lines"
 
@@ -96,6 +98,19 @@ async def start():
     app_user = cl.user_session.get("user")
     cl.user_session.set("memory", ConversationBufferMemory(return_messages=True))
     cl.user_session.set("aim_run", start_aim_run())
+    
+    if app_user:
+        # Crear nuevo thread usando directamente el endpoint de Iván
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(f"{conf.USERS_API_FULL_URL}/threads/create/{app_user.identifier}")
+                response.raise_for_status()
+                thread_data = response.json()  # {"thread_id": int, "user_id": int}
+                cl.user_session.set("thread_id", thread_data["thread_id"])
+                print(f"Created new thread {thread_data['thread_id']} for user {app_user.identifier}")
+            except Exception as e:
+                print(f"Error creating thread: {e}")
+    
     settings = await cl.ChatSettings(
         [
             Select(
@@ -158,12 +173,52 @@ async def resume(thread: ThreadDict):
     settings = cl.user_session.get("settings")
     cl.user_session.set("aim_run", start_aim_run())
     await update_settings(settings)
-    root_messages = [m for m in thread["steps"] if m["parentId"] is None]
-    for message in root_messages:
-        if message["type"] == "user_message":
-            memory.chat_memory.add_user_message(message["output"])
-        else:
-            memory.chat_memory.add_ai_message(message["output"])
+    
+    chainlit_thread_id = thread.get("id")
+    cl.user_session.set("chainlit_thread_id", chainlit_thread_id)
+    
+    app_user = cl.user_session.get("user")
+    if app_user:
+        try:            
+            # Obtener threads del usuario usando llamada HTTP directa
+            async with httpx.AsyncClient() as client:
+                response = await client.get(f"{conf.USERS_API_FULL_URL}/threads/{app_user.identifier}")
+                response.raise_for_status()
+                user_threads = response.json()
+                
+                if user_threads:
+                    last_thread_id = user_threads[-1]["thread_id"]  # Obtenemos el último thread
+                    cl.user_session.set("thread_id", last_thread_id)
+                    
+                    # Obtener mensajes del thread
+                    response = await client.get(f"{conf.USERS_API_FULL_URL}/threads/messages/{last_thread_id}")
+                    response.raise_for_status()
+                    messages = response.json()
+                                    
+                    for msg in messages:
+                        if msg["sender"] == "user":
+                            memory.chat_memory.add_user_message(msg["content"])
+                        elif msg["sender"] == "assistant":
+                            memory.chat_memory.add_ai_message(msg["content"])
+                            
+                    print(f"Cargados {len(messages)} mensajes del thread {last_thread_id}")
+                else:
+                    # Crear nuevo thread
+                    response = await client.post(f"{conf.USERS_API_FULL_URL}/threads/create/{app_user.identifier}")
+                    response.raise_for_status()
+                    thread_data = response.json()
+                    cl.user_session.set("thread_id", thread_data["thread_id"])
+                    print(f"Nuevo thread creado en resume: {thread_data['thread_id']}")
+                
+        except Exception as e:
+            print(f"Error: {e}")
+            root_messages = [m for m in thread["steps"] if m["parentId"] is None]
+            for message in root_messages:
+                if message["type"] == "user_message":
+                    memory.chat_memory.add_user_message(message["output"])
+                else:
+                    memory.chat_memory.add_ai_message(message["output"])
+    
     cl.user_session.set("memory", memory)
 
 
@@ -217,15 +272,26 @@ async def llm_step(query, context, **kwargs):
 
 
 @cl.on_message
-async def main(message: cl.Message):
-    memory = cl.user_session.get("memory")
+async def on_message(message: cl.Message):
     user = cl.user_session.get("user")
-    session_number = cl.user_session.get("session_number")
-    settings = cl.user_session.get("settings")
+    thread_id = cl.user_session.get("thread_id")
+    
+    if user and thread_id:
+        async with httpx.AsyncClient() as client:
+            try:
+                await client.post(
+                    f"{conf.USERS_API_FULL_URL}/threads/message/{thread_id}",
+                    params={"sender": "user"},
+                    json={"message": message.content}
+                )
+            except Exception as e:
+                print(f"Error saving user message: {e}")
+
     if (
         message.elements and user.metadata["role"] == Role.CLIENTE
     ):  # Esto requiere modificarse por Role.CLIENTE para utilisar la funcion de subir pdfs...
         file = message.elements[0]
+        settings = cl.user_session.get("settings")
         # msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
         # await msg.send()
         try:
@@ -260,16 +326,50 @@ async def main(message: cl.Message):
                 collection_name=collection_name, dataWithEmbeddings=embeddings_data
             )
             print(f"Archivo `{file.name}` cargado exitosamente, `{result}`")
-            # msg.content = f"Archivo `{file.name}` cargado exitosamente, `{result}`"
+        
+            # Guardar en thread
+            if user and thread_id:
+                async with httpx.AsyncClient() as client:
+                    try:
+                        await client.post(
+                            f"{conf.USERS_API_FULL_URL}/threads/message/{thread_id}",
+                            params={"sender": "assistant"},
+                            json={"message": success_message}
+                        )
+                    except Exception as e:
+                        print(f"Error saving success message: {e}")
+            
+            # NO hacer return aquí si hay contenido de texto para procesar
+            if not message.content or not message.content.strip():
+                return
+                    
         except Exception as e:
-            # msg.content = f"Error procesando el archivo `{file.name}`: {str(e)}"
-            print(f"Error procesando el archivo `{file.name}`: {str(e)}")
+            error_msg = f"Error procesando el archivo `{file.name}`: {str(e)}"
+            print(error_msg)
 
-    msg = cl.Message(content="")  # Solo muestra el loader si no se envió otro mensaje
+            # Guardar mensaje de error en thread
+            if user and thread_id:
+                async with httpx.AsyncClient() as client:
+                    try:
+                        await client.post(
+                            f"{conf.USERS_API_FULL_URL}/threads/message/{thread_id}",
+                            params={"sender": "assistant"},
+                            json={"message": error_msg}
+                        )
+                    except Exception as e:
+                        print(f"Error saving error message: {e}")
+            # NO hacer return aquí si hay contenido de texto para procesar
+            if not message.content or not message.content.strip():
+                return
+
+    # Procesar contenido de texto (si existe y no es solo archivo)        
+    if message.content and message.content.strip():
+        msg = cl.Message(content="")  # Solo muestra el loader si no se envió otro mensaje
     await msg.send()
 
     query = message.content
     context = await vectordb_results_step(query)
+    settings = cl.user_session.get("settings")
     kwargs = {
         "model": settings["model"],
         "temperature": settings["temperature"],
@@ -278,8 +378,21 @@ async def main(message: cl.Message):
     respuesta = await llm_step(query=query, context=context, **kwargs)
     msg.content = f"{respuesta}"
 
-    await msg.update()  # Actualizamos el mensaje con los nuevos datos
+    await msg.update()  
+    
+    # Guardamos respuesta del asistente
+    if user and thread_id and 'respuesta' in locals():
+        async with httpx.AsyncClient() as client:
+            try:
+                await client.post(
+                    f"{conf.USERS_API_FULL_URL}/threads/message/{thread_id}",
+                    params={"sender": "assistant"},
+                    json={"message": respuesta}
+                )
+            except Exception as e:
+                print(f"Error: {e}")
 
+    memory = cl.user_session.get("memory")
     memory.chat_memory.add_user_message(message.content)
     memory.chat_memory.add_ai_message(msg.content)
 
@@ -287,7 +400,8 @@ async def main(message: cl.Message):
 @cl.on_chat_end
 async def close():
     aim_run = cl.user_session.get("aim_run")
-    end_aim_run(aim_run)
+    if aim_run:
+        end_aim_run(aim_run)
 
 
 if __name__ == "__main__":
