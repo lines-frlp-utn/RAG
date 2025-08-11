@@ -2,7 +2,7 @@ services:
 
   ollama:
     container_name: ollama
-    image: ollama/ollama:0.6.5
+    image: ollama/ollama:0.11.4
     volumes:
       - ollama:/root/.ollama
     ports:
@@ -11,24 +11,26 @@ services:
       - OLLAMA_DEBUG=true
       - CUDA_VISIBLE_DEVICES=0
       - OLLAMA_CONTEXT_LENGTH=8192
-    entrypoint: bash -c "ollama serve & pid=$!; sleep 5; ollama pull llama3.1; ollama pull gemma3:1b; ollama pull granite-embedding:278m; wait $pid"
+    entrypoint: bash -c "ollama serve & pid=$!; sleep 5; ollama pull llama3.1; ollama pull qwen2.5vl; ollama pull granite-embedding:278m; wait $pid"
+    restart: ${RESTART_POLICY:-no}
+
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.ollama.loadbalancer.server.port=11434"
       - "traefik.http.routers.ollama-http.rule=PathRegexp(`^/(api|v1).*`)" # Route user requests matching /api or /v1
       - "traefik.http.services.ollama.loadbalancer.passhostheader=false"
 
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   
   aim-server:
-    image: aimstack/aim:3.28.0
+    image: aimstack/aim:3.29.1
     command: server --host 0.0.0.0
     container_name: aim_server
     environment:
@@ -37,9 +39,10 @@ services:
         - 53800:53800 
     volumes:
         - aim-volume:/opt/aim
+    restart: ${RESTART_POLICY:-no}
 
   aim-ui:
-    image: aimstack/aim:3.28.0
+    image: aimstack/aim:3.29.1
     command: up --host 0.0.0.0
     container_name: aim_ui
     environment:
@@ -48,6 +51,7 @@ services:
         - 43800:43800
     volumes:
         - aim-volume:/opt/aim
+    restart: ${RESTART_POLICY:-no}
 
   chainlit-app:
     container_name: prod-chainlit
@@ -78,6 +82,8 @@ services:
       - "traefik.http.services.chainlit-router.loadbalancer.server.port=80"
     depends_on:
       - aim-server
+      - users_db
+    restart: ${RESTART_POLICY:-no}
 
   traefik:
     image: traefik:v3.3
@@ -88,10 +94,10 @@ services:
       - "--accesslog=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:8005"
+      - "--entrypoints.web.address=:8000"
       - "--entrypoints.websecure.address=:443"
     ports:
-      - "8005:8005"
+      - "8000:8000"
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -99,6 +105,35 @@ services:
       - traefik.enable=true
       # - "traefik.http.routers.traefik.middlewares=auth"
       # - "traefik.http.middlewares.auth.basicauth.users=myuser:$$apr1$$HtC6EB1y$$Xn8dAvzj5l2FGFXlrT2Rl1"
+    restart: ${RESTART_POLICY:-no}
+
+  mysql_db:
+    image: mysql:8.0
+    container_name: mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: usuarios_db
+    volumes:
+      - ./volumes/mysql_data/users:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$MYSQL_ROOT_PASSWORD || exit 1"]
+    restart: ${RESTART_POLICY:-no}
+
+  users_db:
+    build:
+      context: users/
+      dockerfile: Dockerfile
+    container_name: users_db
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql+pymysql://root:password@mysql_db:3306/usuarios_db
+    ports:
+      - "8009:8009"
+    restart: ${RESTART_POLICY:-no}
 
 networks:
   default:
@@ -108,8 +143,6 @@ volumes:
   ollama:
     name: ollama
   rag-volume:
-    driver: local
-  transformer-volume:
     driver: local
   aim-volume:
     driver: local

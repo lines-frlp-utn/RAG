@@ -1,36 +1,41 @@
-import chainlit as cl
-from pydantic import BaseModel
-from app.aim_tracker import end_aim_run, start_aim_run
-from app.databases import get_context_from_db, post_embeddings, RetrieveData
-from app.embeddingGenerator import EmbeddingGenerator
-from app.models import get_conversational_answer
-from app.pdfExtractor import extract_text_from_pdf
-from app.splitter import split_markdown_text
-from langchain.memory import ConversationBufferMemory
-from chainlit.types import ThreadDict
-from app.auth import create_user, user_exists, UserExistsDTOResponse, Role
-from chainlit.input_widget import Select, Slider
 from typing import Dict
 
+import chainlit as cl
+from app.aim_tracker import end_aim_run, start_aim_run
+from app.auth import Role, create_user, user_exists
+from app.databases import RetrieveData, get_context_from_db, post_embeddings
+from app.embedding_generator import embedding_generator
+from app.models import get_conversational_answer
+from app.parser import extract_text_from_pdf
+from app.splitter.markdown_splitter import split_markdown_text as markdown_split
+from app.splitter.semantic_splitter import split_semantic as semantic_split
+from chainlit.input_widget import Select, Slider
+from chainlit.types import ThreadDict
+from langchain.memory import ConversationBufferMemory
 
-embedding_generator = EmbeddingGenerator()
 collection_name = "prueba_lines"
 
 
 def format_docs(docs):
     return "\n\n".join([d.page_content for d in docs])
 
+
 # Callback de autenticación
 @cl.password_auth_callback
 def auth_callback(username: str, password: str):
-    if (username and password):
+    if username and password:
         user = user_exists(username, password)
         if user.exists is False:
-            user = create_user(username, Role.CLIENTE, password)
+            user = create_user(username, Role.CLIENTE, password, name=username)
             if user:
                 print(f"User created: {username}")
                 return cl.User(
-                    identifier=username, metadata={"role": Role.CLIENTE, "provider": "credentials"}
+                    identifier=username,
+                    metadata={
+                        "role": Role.CLIENTE,
+                        "provider": "credentials",
+                        "display_name": username,
+                    },
                 )
             else:
                 print(f"Error creating user: {username}")
@@ -38,45 +43,50 @@ def auth_callback(username: str, password: str):
         else:
             print(f"User exists: {user}")
             return cl.User(
-                identifier=username, metadata={"role": user.role_name, "provider": "credentials"}
+                identifier=username,
+                metadata={
+                    "role": user.role_name,
+                    "provider": "credentials",
+                    "display_name": username,
+                },
             )
     else:
         return None
+
 
 @cl.oauth_callback
 def oauth_callback(
     provider_id: str,
     token: str,
     raw_user_data: Dict[str, str],
-    ):
+):
     email = raw_user_data.get("email")
-    name = raw_user_data.get("name", "")
+    display_name = raw_user_data.get("name", "")
     picture = raw_user_data.get("picture", "")
-    
+
     if not email:
         print("OAuth callback: Email no proporcionado")
         return None
     try:
-        user = user_exists(name, "") ##
+        user = user_exists(email, "")
         if not user or user.exists is False:
             print("Usuario no existe, creando con OAuth")
-            created = create_user(name, Role.CLIENTE, "", provider_id, email,picture) ##  
-            role = Role.CLIENTE if created else None
+            created = create_user(
+                email, Role.CLIENTE, "", provider_id, email, picture, name=display_name
+            )
+            if created:
+                role = Role.CLIENTE
         else:
             print("Usuario encontrado")
             role = user.role_name
 
     except Exception as e:
         print(f"Error durante verificación/creación de usuario: {e}")
-        return None 
+        return None
 
     return cl.User(
-        identifier=name,
-        metadata={
-            "role": role,
-            "provider": provider_id , 
-            #"picture": picture,
-        }
+        identifier=email,
+        metadata={"role": role, "provider": provider_id, "display_name": display_name},
     )
 
 
@@ -93,7 +103,16 @@ async def start():
                 label="model",
                 values=[
                     "llama3.1",
-                    "gemma3:1b",
+                    "qwen2.5vl",
+                ],
+                initial_index=0,
+            ),
+            Select(
+                id="splitter",
+                label="Tipo de splitter",
+                values=[
+                    "Markdown",
+                    "Semantico",
                 ],
                 initial_index=0,
             ),
@@ -116,11 +135,14 @@ async def start():
         ]
     ).send()
 
-    if (app_user):
-        msg = cl.Message(content=f"¡Hola, {app_user.identifier}! ¿En qué puedo ayudarte hoy?")
+    if app_user:
+        display_name = app_user.metadata.get("display_name", app_user.identifier)
+        msg = cl.Message(content=f"¡Hola, {display_name}! ¿En qué puedo ayudarte hoy?")
         await msg.send()
     else:
-        cl.Message(content="Ha habido un error de autenticación. Por favor, vuelve a intentar iniciar sesión.").send()
+        cl.Message(
+            content="Ha habido un error de autenticación. Por favor, vuelve a intentar iniciar sesión."
+        ).send()
 
     await update_settings(settings)
 
@@ -128,6 +150,7 @@ async def start():
 @cl.on_settings_update
 async def update_settings(settings):
     cl.user_session.set("settings", settings)
+
 
 @cl.on_chat_resume
 async def resume(thread: ThreadDict):
@@ -143,6 +166,7 @@ async def resume(thread: ThreadDict):
             memory.chat_memory.add_ai_message(message["output"])
     cl.user_session.set("memory", memory)
 
+
 @cl.step
 async def vectordb_results_step(query: str):
     settings = cl.user_session.get("settings")
@@ -157,9 +181,10 @@ async def vectordb_results_step(query: str):
     context = await context_step(results)
     return context
 
+
 async def context_step(results: list[RetrieveData]) -> str:
     """Procesa resultados de bases vectoriales (siempre lista)"""
-    
+
     context_sections = []
     context_texts = []
     for result in results:
@@ -167,17 +192,18 @@ async def context_step(results: list[RetrieveData]) -> str:
         section = [
             f"🏷️ ID: {result.id}",
             *[f"📋 {param}: {value}" for param, value in result.metadata.items()],
-            f"\n{'━'*40}",
+            f"\n{'━' * 40}",
             result.text,
-            f"{'━'*40}"
+            f"{'━' * 40}",
         ]
         context_sections.append("\n".join(section))
         context_texts.append(result.text)
-    
+
     full_output = "\n\n".join(context_sections) if context_sections else "Sin coincidencias"
     context_texts = "\n\n".join(context_texts) if context_texts else "Sin coincidencias"
     cl.context.current_step.output = full_output
     return context_texts
+
 
 @cl.step
 async def llm_step(query, context, **kwargs):
@@ -196,7 +222,9 @@ async def main(message: cl.Message):
     user = cl.user_session.get("user")
     session_number = cl.user_session.get("session_number")
     settings = cl.user_session.get("settings")
-    if message.elements and user.metadata["role"] == Role.ADMIN:
+    if (
+        message.elements and user.metadata["role"] == Role.CLIENTE
+    ):  # Esto requiere modificarse por Role.CLIENTE para utilisar la funcion de subir pdfs...
         file = message.elements[0]
         # msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
         # await msg.send()
@@ -207,15 +235,20 @@ async def main(message: cl.Message):
 
             # Splittear el texto en chunks semánticos
             print(f"Splitteando texto de `{file.name}`...")
-            chunks = split_markdown_text(text)
+            splitter_type = settings.get("splitter", "Markdown").lower()
+
+            if splitter_type == "markdown":
+                chunks = markdown_split(text)
+            elif splitter_type == "semantico":
+                chunks = semantic_split(text)
+            else:
+                raise ValueError(f"Splitter desconocido: {splitter_type}")
+
+            print(f"usando splitter `{splitter_type}`")
 
             # Generar los embeddings de los chunks
             print(f"Generando embeddings de `{file.name}`...")
             embeddings = await cl.make_async(embedding_generator.get_embeddings)(chunks)
-
-            # Refinar los chunks según la similitud coseno
-            # print(f"Refinando chunks de `{file.name}`...")
-            # refined_chunks = refine_split_by_similarity(chunks, embeddings)
 
             # Formatear y cargar los embeddings en la base de datos
             print(f"Formateando embeddings de `{file.name}`...")

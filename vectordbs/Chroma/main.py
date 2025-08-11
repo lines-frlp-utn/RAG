@@ -5,7 +5,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-    
 
 
 class EmbeddingData(BaseModel):
@@ -44,70 +43,71 @@ def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
 
 def get_context_with_filters(collection_name, query_embedding):
     try:
-        print(f"\n Buscando en colección: '{collection_name}'")  
-        
+        print(f"\n Buscando en colección: '{collection_name}'")
+
         # 1. Validar que la colección existe
         collection = client.get_collection(name=collection_name)
         if collection.count() == 0:
             raise ValueError(f"La colección '{collection_name}' está vacía")
-        
+
         # 2. Realizar consulta con manejo de errores
         response = collection.query(
             query_embeddings=[query_embedding],
             n_results=2,
-            include=["documents", "metadatas", "distances"]
+            include=["documents", "metadatas", "distances"],
         )
-        
-        
+
         if not response or not isinstance(response, dict):
             raise ValueError("ChromaDB devolvió una respuesta inválida")
-        
+
         ids = response.get("ids", [[]])[0] if response.get("ids") else []
         if not ids:
             raise ValueError("No se encontraron resultados (IDs vacíos)")
-        
+
         # 3. Procesar resultados con metadatos
         retrieve_data_list = []
-        for i, (doc_id, doc_text, meta, distance) in enumerate(zip(
-            ids,
-            response.get("documents", [[]])[0],
-            response.get("metadatas", [[]])[0],
-            response.get("distances", [[]])[0]
-        )):
-            
+        for i, (doc_id, doc_text, meta, distance) in enumerate(
+            zip(
+                ids,
+                response.get("documents", [[]])[0],
+                response.get("metadatas", [[]])[0],
+                response.get("distances", [[]])[0],
+            )
+        ):
             doc_text = str(doc_text) if doc_text else "[Sin texto]"
             meta = meta if isinstance(meta, dict) else {}
-            
+
             retrieve_data_list.append(
                 RetrieveData(
                     id=str(doc_id),
                     text=doc_text.strip(),
                     metadata={
                         **meta,
-                        "search_metadata": {  
+                        "search_metadata": {
                             "distance": float(distance) if distance else -1,
-                        }
-                    }
+                        },
+                    },
                 )
             )
-        
+
         return retrieve_data_list
 
     except Exception as e:
-        print(f" Error crítico: {str(e)}")  
+        print(f" Error crítico: {str(e)}")
         return [
             RetrieveData(
                 id="error",
                 text="Error recuperando contexto",
                 metadata={
                     "error": str(e),
-                    "search_metadata": {  
+                    "search_metadata": {
                         "distance": -1,
-                    }
-                }
+                    },
+                },
             )
         ]
-    
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
