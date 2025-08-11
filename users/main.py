@@ -1,9 +1,10 @@
 import os
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import Column, ForeignKey, Integer, String, create_engine, inspect, text
+from sqlalchemy import Column, ForeignKey, Integer, String, create_engine, inspect, text, DateTime, func, asc
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, relationship, sessionmaker
+
 
 app = FastAPI()
 
@@ -16,7 +17,7 @@ Base = declarative_base()
 class UserCreateDTO(BaseModel):
     name: str
     identifier: str
-    password: str  # puede ser vacio si es OAuth
+    password: str  ##puede ser vacio si es OAuth
     role_name: str
     auth_provider: str = "credentials"
     email: str = None
@@ -40,7 +41,7 @@ class Usuario(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), nullable=False)
     identifier = Column(String(50), unique=True, index=True, nullable=False)
-    password = Column(String(50), nullable=True)  # Puede ser NULL si es OAuth
+    password = Column(String(50), nullable=True)  ##Puede ser NULL si es OAuth
     auth_provider = Column(String(50), nullable=False, default="credentials")
     email = Column(String(50), unique=True, nullable=True)
     picture = Column(String(100), nullable=True)
@@ -49,29 +50,27 @@ class Usuario(Base):
     threads = relationship("Thread", back_populates="user")
     role = relationship("Role", back_populates="users")
 
-
-class Thread(Base):    
+class Thread(Base):
     __tablename__ = "threads"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False) 
-
+    user_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    chainlit_thread_id = Column(String(100), nullable=True, index=True)
+    created_at = Column(DateTime, server_default=func.now())
     user = relationship("Usuario", back_populates="threads")
-    messages = relationship("Message", back_populates="thread")
+    messages = relationship("Message", back_populates="thread", order_by="Message.created_at")
 
 class Message(Base):
     __tablename__ = "messages"
     id = Column(Integer, primary_key=True, index=True)
     thread_id = Column(Integer, ForeignKey("threads.id"), nullable=False)
-    content = Column(String(5000), nullable=False)  # Aumentado de 500 a 5000 caracteres
+    content = Column(String(5000), nullable=False)
     sender = Column(String(50), nullable=False)
-
+    created_at = Column(DateTime, server_default=func.now())
     thread = relationship("Thread", back_populates="messages")
 
-# Crear las tablas que no estan creadas
+##Crear las tablas que no estan creadas
 Base.metadata.create_all(bind=engine)
 
-
-# Dependency to get DB session
 def get_db():
     db = SessionLocal()
     try:
@@ -105,8 +104,11 @@ def startup_event():
     add_column_if_not_exists(db, "usuarios", "email", "VARCHAR(50)")
     add_column_if_not_exists(db, "usuarios", "auth_provider", "VARCHAR(50)")
     add_column_if_not_exists(db, "usuarios", "picture", "VARCHAR(100)")
+    add_column_if_not_exists(db, "threads", "chainlit_thread_id", "VARCHAR(100)")
+    add_column_if_not_exists(db, "threads", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
+    add_column_if_not_exists(db, "messages", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP")
 
-    # Esto es para que no se rompa todo si la respuesta del LLM es muy larga
+    ##Esto es para que no se rompa todo si la respuesta del LLM es muy larga
     try:
         db.execute(text("ALTER TABLE messages MODIFY COLUMN content VARCHAR(5000)"))
         db.commit()
@@ -117,7 +119,7 @@ def startup_event():
 
 
 @app.get("/users/login/{identifier}")
-async def user_exists(identifier: str, password=str, db: Session = Depends(get_db)):
+async def user_exists(identifier: str, password: str = "", db: Session = Depends(get_db)):
     user = (
         db.query(Usuario)
         .filter(Usuario.identifier == identifier)
@@ -219,5 +221,40 @@ async def get_messages(thread_id: int, db: Session = Depends(get_db)):
     thread = db.query(Thread).filter(Thread.id == thread_id).first()
     if not thread:
         raise HTTPException(status_code=400, detail="Thread not found")
-    messages = db.query(Message).filter(Message.thread_id == thread.id).all()
-    return [{"message_id": message.id, "content": message.content, "sender": message.sender} for message in messages]
+    messages = (db.query(Message)
+                  .filter(Message.thread_id == thread.id)
+                  .order_by(asc(Message.created_at), asc(Message.id))
+                  .all())
+    return [{"message_id": m.id, "content": m.content, "sender": m.sender} for m in messages]
+
+##Vincular thread con ID de Chainlit
+@app.patch("/threads/{thread_id}/chainlit/{chainlit_id}")
+async def link_chainlit_thread(thread_id: int, chainlit_id: str, db: Session = Depends(get_db)):
+    th = db.query(Thread).filter(Thread.id == thread_id).first()
+    if not th:
+        raise HTTPException(status_code=404, detail="Thread not found")
+    th.chainlit_thread_id = chainlit_id
+    db.commit()
+    return {"ok": True}
+
+##Buscar por chainlit_thread_id
+@app.get("/threads/by_chainlit/{chainlit_id}")
+async def get_by_chainlit(chainlit_id: str, db: Session = Depends(get_db)):
+    th = db.query(Thread).filter(Thread.chainlit_thread_id == chainlit_id).first()
+    if not th:
+        raise HTTPException(status_code=404, detail="Thread not found")
+    return {"thread_id": th.id, "user_id": th.user_id}
+
+##Último thread de un usuario (para “continuar donde quedó”)
+@app.get("/threads/{identifier}/latest")
+async def get_latest_thread(identifier: str, db: Session = Depends(get_db)):
+    user = db.query(Usuario).filter(Usuario.identifier == identifier).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    th = (db.query(Thread)
+            .filter(Thread.user_id == user.id)
+            .order_by(Thread.created_at.desc())
+            .first())
+    if not th:
+        raise HTTPException(status_code=404, detail="No threads")
+    return {"thread_id": th.id}
