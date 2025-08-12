@@ -1,7 +1,7 @@
 from app.config import conf
 from langchain.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
+from langchain_openai import ChatOpenAI
 
 # LLM
 llm = ChatOpenAI(
@@ -50,3 +50,16 @@ re_write_prompt = PromptTemplate(
 )
 
 question_rewriter = re_write_prompt | llm | StrOutputParser()
+
+context_grader_prompt = PromptTemplate(
+    template="""You are a grader assessing whether a context is useful to resolve a question. \n 
+    Here is the context:
+    \n ------- \n
+    {context} 
+    \n ------- \n
+    Here is the question: {question}
+    Give a binary score 'yes' or 'no' to indicate whether the context is useful to resolve a question. \n
+    Provide the binary score as a JSON with a single key 'score' and no preamble or explanation.""",
+    input_variables=["context", "question"],
+)
+context_grader = context_grader_prompt | llm | JsonOutputParser()
