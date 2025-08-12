@@ -1,7 +1,9 @@
 from typing import Optional, TypedDict
 
-from app.graders import answer_grader, hallucination_grader, question_rewriter
+from app.graders import answer_grader, context_grader, hallucination_grader, question_rewriter
 from langgraph.graph import END, START, StateGraph
+
+MAX_RETRIES = 3  # Maximum number of retries for context retrieval
 
 
 class GraphState(TypedDict):
@@ -10,29 +12,56 @@ class GraphState(TypedDict):
     answer: Optional[str]
     grounded: Optional[bool]
     settings: Optional[dict]
+    context_grade: Optional[str]
+    retry_count: Optional[int]
 
 
-# Node: Retrieve context
+# Node: Retrieve context from vector database
 async def retrieve(state: GraphState):
+    retries = state.get("retry_count", 0) + 1
     from app.main import vectordb_results_step
 
-    context = await vectordb_results_step(state["question"])
-    return {**state, "context": context}
+    # Ejemplo: agrego el número de intento a la consulta para que se modifique
+    question_for_retrieval = f"{state['question']} (intent {retries})"
+
+    print(f"---RETRIEVING CONTEXT (attempt {retries})---")
+    context = await vectordb_results_step(question_for_retrieval)
+    return {**state, "context": context, "retry_count": retries}
 
 
-# Node: Generate answer
+# Node: Generate answer from context
 async def generate(state: GraphState):
     from app.main import llm_step
 
     settings = state.get("settings", {})
-    answer = await llm_step(query=state["question"], context=state["context"], **settings)
+    # Usar el contexto solo si la calificación fue "yes"
+    context_relevant = state.get("context_grade") == "yes"
+    context = state["context"] if context_relevant else None
+
+    if not context_relevant:
+        # Opcional: devolver mensaje directo sin llamar a llm_step
+        return {**state, "answer": "No hay contexto relevante para responder esta pregunta."}
+
+    answer = await llm_step(query=state["question"], context=context, **settings)
     return {**state, "answer": answer}
 
 
-# async def grade_context(state: GraphState):
-# print("---CHECK CONTEXT RELEVANCE TO QUESTION---")
-# question = state["question"]
-# context = state["context"]
+# Node: Grade context
+async def grade_context(state: GraphState):
+    print("---CHECK CONTEXT RELEVANCE TO QUESTION---")
+    question = state["question"]
+    context = state["context"] or ""
+
+    score = context_grader.invoke({"question": question, "context": context})
+    grade = score["score"]
+    print(f"Context relevance score: {grade}")
+
+    if grade == "yes":
+        print("---DECISION: CONTEXT IS RELEVANT TO QUESTION---")
+    else:
+        print("---DECISION: CONTEXT IS NOT RELEVANT TO QUESTION---")
+
+    return {**state, "context_grade": grade}
 
 
 def transform_query(state):
@@ -48,11 +77,31 @@ def transform_query(state):
 
     print("---TRANSFORM QUERY---")
     question = state["question"]
-    context = state["context"]
 
     # Re-write question
-    better_question = question_rewriter.invoke({"question": question})
-    return {"context": context, "question": better_question}
+    better_question = question_rewriter.invoke({"question": question, "answer": ""})
+    return {**state, "question": better_question}
+
+
+def decide_to_generate_from_context(state: GraphState):
+    print("---ASSESS GRADED CONTEXT WITH RETRY LIMIT---")
+    grade = state.get("context_grade")
+    retries = state.get("retry_count", 0)
+
+    if grade != "yes":
+        if retries >= MAX_RETRIES:
+            print(
+                f"---MAX RETRIES ({MAX_RETRIES}) ALCANZADO, NO SE PUEDE OBTENER CONTEXTO RELEVANTE---"
+            )
+            return "not_supported_error"
+        else:
+            print(
+                f"---DECISION: CONTEXT NO RELEVANTE -> TRANSFORM QUERY (INTENTO {retries + 1})---"
+            )
+            return "transform_query"
+    else:
+        print("---DECISION: CONTEXT RELEVANTE -> GENERATE---")
+        return "generate"
 
 
 def grade_generation_v_documents_and_question(state):
@@ -92,48 +141,46 @@ def grade_generation_v_documents_and_question(state):
         return "not supported"
 
 
+# Error handlers
+async def handle_not_supported(state: GraphState):
+    return {
+        **state,
+        "answer": "Error: La generación no está fundamentada en los documentos. Revise la pregunta o el contexto.",
+    }
+
+
+async def handle_not_useful(state: GraphState):
+    return {
+        **state,
+        "answer": "Error: La respuesta no responde adecuadamente a la pregunta. Intente reformular la pregunta.",
+    }
+
+
 # Build the graph
 workflow = StateGraph(GraphState)
+
 workflow.add_node("retrieve", retrieve)
-# workflow.add_node("grade_context", grade_context)
+workflow.add_node("grade_context", grade_context)
 workflow.add_node("generate", generate)
 workflow.add_node("transform_query", transform_query)
-
-
-workflow.add_edge(START, "retrieve")
-
-# workflow.add_edge("retrieve", "grade_context")
-
-# workflow.add_conditional_edges(
-#     "grade_context",
-#     decide_to_generate,
-#     {
-#         "transform_query": "transform_query",
-#         "generate": "generate",
-#     },
-# )
-
-workflow.add_edge("retrieve", "generate")
-
-# workflow.add_edge("transform_query", "retrieve")
-
-
-def handle_not_supported(state):
-    return {
-        **state,
-        "answer": "Error: La generación no está fundamentada en los documentos. Por favor, revise la pregunta o el contexto.",
-    }
-
-
-def handle_not_useful(state):
-    return {
-        **state,
-        "answer": "Error: La respuesta generada no responde adecuadamente a la pregunta. Intente reformular la pregunta.",
-    }
-
-
 workflow.add_node("not_supported_error", handle_not_supported)
 workflow.add_node("not_useful_error", handle_not_useful)
+
+workflow.add_edge(START, "retrieve")
+workflow.add_edge("retrieve", "grade_context")
+
+workflow.add_conditional_edges(
+    "grade_context",
+    decide_to_generate_from_context,
+    {
+        "retrieve": "retrieve",
+        "generate": "generate",
+        "transform_query": "transform_query",
+        "not_supported_error": "not_supported_error",
+    },
+)
+
+workflow.add_edge("transform_query", "retrieve")
 
 workflow.add_conditional_edges(
     "generate",
@@ -145,5 +192,4 @@ workflow.add_conditional_edges(
     },
 )
 
-# Compile
 app = workflow.compile()
