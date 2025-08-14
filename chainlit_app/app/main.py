@@ -105,7 +105,7 @@ async def start():
                     "llama3.1",
                     "qwen2.5vl",
                 ],
-                initial_index=0,
+                initial_index=1,
             ),
             Select(
                 id="splitter",
