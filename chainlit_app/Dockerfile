@@ -14,4 +14,4 @@ RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
 COPY . .
 
 EXPOSE 80
-CMD ["python", "-m", "chainlit", "run", "app/main.py", "-h", "0.0.0.0", "-p", "80"]
+CMD ["python", "-m", "chainlit", "run", "app/main.py", "--host", "0.0.0.0", "--port", "80"]
