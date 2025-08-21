@@ -19,5 +19,7 @@ dependencies = [
     "pymupdf4llm>=0.0.17",
     "aim>=3.28.0",
     "chainlit>=2.4.302",
-    "langchain_experimental"
+    "httpx>=0.28.1",
+    "asyncpg>=0.30.0",
+    "langchain-experimental>=0.3.4",
 ]
