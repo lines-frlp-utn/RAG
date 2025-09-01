@@ -20,4 +20,5 @@ dependencies = [
     "aim>=3.28.0",
     "chainlit>=2.4.302",
     "langgraph",
+    "langchain-experimental",
 ]
