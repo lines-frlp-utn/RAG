@@ -88,3 +88,14 @@ services:
       MILVUS_URL: "http://milvus-standalone:19530"
     depends_on:
       - standalone
+    
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    environment:
+      PMA_HOST: mysql_db
+      MYSQL_ROOT_PASSWORD: password
+    ports:
+      - "8081:80"
+    depends_on:
+      - mysql_db

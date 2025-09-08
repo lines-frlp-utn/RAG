@@ -8,9 +8,9 @@ class Settings(BaseSettings):
     DB_PORT: int
     LLAMA_PARSE_API_KEY: str | None
     USE_AIM: bool
-    LITERAL_API_KEY: str | None
     USERS_API_URL: str | None
     USERS_API_PORT: int | None
+    USERS_API_FULL_URL: str = "http://users_db:8009"  # Nueva variable con default
     CHAINLIT_AUTH_SECRET: str | None
     OAUTH_GOOGLE_CLIENT_ID: str | None
     OAUTH_GOOGLE_CLIENT_SECRET: str | None

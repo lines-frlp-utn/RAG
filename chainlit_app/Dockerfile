@@ -1,6 +1,7 @@
 FROM python:3.12-slim
 
 # Establecemos el directorio de trabajo dentro del contenedor
+ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 WORKDIR /code
 
 # Mount UV and install dependencies
@@ -12,5 +13,5 @@ RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
 # Copiamos todo el contenido del proyecto. .dockerignore se encarga de ignorar los archivos que no queremos copiar
 COPY . .
 
-# Comando por defecto para ejecutar la aplicación cuando se inicia el contenedor
-CMD ["python", "-m", "chainlit", "run","--host", "0.0.0.0", "--port", "80", "app/main.py"]
+EXPOSE 80
+CMD ["python", "-m", "chainlit", "run", "app/main.py", "--host", "0.0.0.0", "--port", "80"]

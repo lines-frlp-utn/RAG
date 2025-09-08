@@ -1,9 +1,10 @@
-from aim import Run, Text
 from app.config import conf
 
 
 def start_aim_run():
     if conf.USE_AIM:
+        from aim import Run, Text
+
         try:
             aim_run = Run(repo="aim://aim-server:53800", experiment="Lines chat")
             return aim_run

@@ -8,7 +8,7 @@
     "[python]": {
         "editor.formatOnSave": true,
         "editor.codeActionsOnSave": {
-          "source.fixAll": "explicit",
+          // "source.fixAll": "explicit",
           "source.organizeImports": "explicit"
         },
         "editor.defaultFormatter": "charliermarsh.ruff"

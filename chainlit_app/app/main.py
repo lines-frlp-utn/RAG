@@ -3,6 +3,8 @@ from typing import Dict
 import chainlit as cl
 from app.aim_tracker import end_aim_run, start_aim_run
 from app.auth import Role, create_user, user_exists
+from app.clients.users_api import UsersApi
+from app.config import conf
 from app.databases import RetrieveData, get_context_from_db, post_embeddings
 from app.embedding_generator import embedding_generator
 from app.langgraph_flow import app as langgraph_app
@@ -14,6 +16,7 @@ from chainlit.input_widget import Select, Slider
 from chainlit.types import ThreadDict
 from langchain.memory import ConversationBufferMemory
 
+api = UsersApi(conf.USERS_API_FULL_URL)
 collection_name = "prueba_lines"
 
 
@@ -24,34 +27,40 @@ def format_docs(docs):
 # Callback de autenticación
 @cl.password_auth_callback
 def auth_callback(username: str, password: str):
-    if username and password:
-        user = user_exists(username, password)
-        if user.exists is False:
-            user = create_user(username, Role.CLIENTE, password, name=username)
-            if user:
-                print(f"User created: {username}")
+    try:
+        if username and password:
+            user = user_exists(username, password)
+            if user and user.exists is False:
+                user = create_user(username, Role.CLIENTE, password, name=username)
+                if user:
+                    print(f"User created: {username}")
+                    return cl.User(
+                        identifier=username,
+                        metadata={
+                            "role": Role.CLIENTE,
+                            "provider": "credentials",
+                            "display_name": username,
+                        },
+                    )
+                else:
+                    print(f"Error creating user: {username}")
+                    return None
+            elif user and user.exists:
+                print(f"User exists: {user}")
                 return cl.User(
                     identifier=username,
                     metadata={
-                        "role": Role.CLIENTE,
+                        "role": user.role_name,
                         "provider": "credentials",
                         "display_name": username,
                     },
                 )
             else:
-                print(f"Error creating user: {username}")
                 return None
         else:
-            print(f"User exists: {user}")
-            return cl.User(
-                identifier=username,
-                metadata={
-                    "role": user.role_name,
-                    "provider": "credentials",
-                    "display_name": username,
-                },
-            )
-    else:
+            return None
+    except Exception as e:
+        print(f"Exception in auth_callback: {e}")
         return None
 
 
@@ -97,6 +106,14 @@ async def start():
     app_user = cl.user_session.get("user")
     cl.user_session.set("memory", ConversationBufferMemory(return_messages=True))
     cl.user_session.set("aim_run", start_aim_run())
+
+    if app_user:
+        try:
+            thread_data = await api.create_thread(app_user.identifier)
+            cl.user_session.set("thread_id", thread_data["thread_id"])
+        except Exception as e:
+            print(f"Error creating thread: {e}")
+
     settings = await cl.ChatSettings(
         [
             Select(
@@ -159,12 +176,47 @@ async def resume(thread: ThreadDict):
     settings = cl.user_session.get("settings")
     cl.user_session.set("aim_run", start_aim_run())
     await update_settings(settings)
-    root_messages = [m for m in thread["steps"] if m["parentId"] is None]
-    for message in root_messages:
-        if message["type"] == "user_message":
-            memory.chat_memory.add_user_message(message["output"])
-        else:
-            memory.chat_memory.add_ai_message(message["output"])
+
+    chainlit_thread_id = thread.get("id")
+    cl.user_session.set("chainlit_thread_id", chainlit_thread_id)
+
+    app_user = cl.user_session.get("user")
+    history_steps = thread.get("steps") or []
+
+    if app_user:
+        try:
+            thread_id = await api.get_thread_by_chainlit(chainlit_thread_id)
+
+            if thread_id is None:
+                thread_id = await api.get_latest_thread(app_user.identifier)
+
+            if thread_id is None:
+                data = await api.create_thread(app_user.identifier)
+                thread_id = data["thread_id"]
+
+            try:
+                await api.link_chainlit_thread(thread_id, chainlit_thread_id)
+            except Exception as e:
+                print(f"Linking error (non-fatal): {e}")
+
+            cl.user_session.set("thread_id", thread_id)
+
+            messages = await api.get_messages(thread_id)
+
+            for msg in messages:
+                if msg["sender"] == "user":
+                    memory.chat_memory.add_user_message(msg["content"])
+                else:
+                    memory.chat_memory.add_ai_message(msg["content"])
+
+            if len(history_steps) == 0:
+                for msg in messages:
+                    author = "Tú" if msg["sender"] == "user" else "Asistente"
+                    await cl.Message(content=msg["content"], author=author).send()
+
+        except Exception as e:
+            print(f"Error on resume: {e}")
+
     cl.user_session.set("memory", memory)
 
 
@@ -218,15 +270,19 @@ async def llm_step(query, context, **kwargs):
 
 
 @cl.on_message
-async def main(message: cl.Message):
-    memory = cl.user_session.get("memory")
+async def on_message(message: cl.Message):
     user = cl.user_session.get("user")
-    session_number = cl.user_session.get("session_number")
-    settings = cl.user_session.get("settings")
-    if (
-        message.elements and user.metadata["role"] == Role.CLIENTE
-    ):  # Esto requiere modificarse por Role.CLIENTE para utilisar la funcion de subir pdfs...
+    thread_id = cl.user_session.get("thread_id")
+
+    if user and thread_id:
+        try:
+            await api.create_message(thread_id, "user", message.content)
+        except Exception as e:
+            print(f"Error saving user message: {e}")
+
+    if message.elements and user.metadata["role"] == Role.CLIENTE:
         file = message.elements[0]
+        settings = cl.user_session.get("settings")
         # msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
         # await msg.send()
         try:
@@ -261,12 +317,34 @@ async def main(message: cl.Message):
                 collection_name=collection_name, dataWithEmbeddings=embeddings_data
             )
             print(f"Archivo `{file.name}` cargado exitosamente, `{result}`")
-            # msg.content = f"Archivo `{file.name}` cargado exitosamente, `{result}`"
-        except Exception as e:
-            # msg.content = f"Error procesando el archivo `{file.name}`: {str(e)}"
-            print(f"Error procesando el archivo `{file.name}`: {str(e)}")
 
-    msg = cl.Message(content="")  # Solo muestra el loader si no se envió otro mensaje
+            # Guardar en thread
+            success_message = f"Archivo `{file.name}` indexado correctamente."
+            if user and thread_id:
+                try:
+                    await api.create_message(thread_id, "assistant", success_message)
+                except Exception as e:
+                    print(f"Error saving success message: {e}")
+
+            if not message.content or not message.content.strip():
+                return
+
+        except Exception as e:
+            error_msg = f"Error procesando el archivo `{file.name}`: {str(e)}"
+            print(error_msg)
+
+            # Guardar mensaje de error en thread
+            if user and thread_id:
+                try:
+                    await api.create_message(thread_id, "assistant", error_msg)
+                except Exception as e:
+                    print(f"Error saving error message: {e}")
+
+            if not message.content or not message.content.strip():
+                return
+
+    if message.content and message.content.strip():
+        msg = cl.Message(content="")
     await msg.send()
 
     query = message.content
@@ -283,9 +361,15 @@ async def main(message: cl.Message):
     }
     result = await langgraph_app.ainvoke(state)
     msg.content = result["answer"]
+    await msg.update()
 
-    await msg.update()  # Actualizamos el mensaje con los nuevos datos
+    if user and thread_id:
+        try:
+            await api.create_message(thread_id, "assistant", respuesta)
+        except Exception as e:
+            print(f"Error saving assistant message: {e}")
 
+    memory = cl.user_session.get("memory")
     memory.chat_memory.add_user_message(message.content)
     memory.chat_memory.add_ai_message(msg.content)
 
@@ -293,7 +377,8 @@ async def main(message: cl.Message):
 @cl.on_chat_end
 async def close():
     aim_run = cl.user_session.get("aim_run")
-    end_aim_run(aim_run)
+    if aim_run:
+        end_aim_run(aim_run)
 
 
 if __name__ == "__main__":

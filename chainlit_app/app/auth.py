@@ -17,15 +17,20 @@ class UserExistsDTOResponse(BaseModel):
 
 def user_exists(userIdentifier: str, password: str):
     print(f"user: {userIdentifier} ¿exists?")
-    response = requests.get(
-        f"{conf.USERS_API_URL}:{conf.USERS_API_PORT}/users/login/{userIdentifier}?password={password}",
-    )
-    if response.status_code != 200:
-        print(f"Error: {response.status_code} - {response.text}")
-    else:
-        data = response.json()
-        user = UserExistsDTOResponse(**data)
-        return user
+    try:
+        response = requests.get(
+            f"{conf.USERS_API_URL}:{conf.USERS_API_PORT}/users/login/{userIdentifier}?password={password}",
+        )
+        if response.status_code != 200:
+            print(f"Error: {response.status_code} - {response.text}")
+            return UserExistsDTOResponse(exists=False, role_name=None)
+        else:
+            data = response.json()
+            user = UserExistsDTOResponse(**data)
+            return user
+    except Exception as e:
+        print(f"Exception in user_exists: {e}")
+        return UserExistsDTOResponse(exists=False, role_name=None)
 
 
 def create_user(userIdentifier, role, password, providerId="", email="", picture="", name=""):
