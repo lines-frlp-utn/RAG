@@ -348,6 +348,7 @@ async def on_message(message: cl.Message):
     await msg.send()
 
     query = message.content
+    settings = cl.user_session.get("settings")
     state = {
         "question": query,
         "context": None,
@@ -365,7 +366,7 @@ async def on_message(message: cl.Message):
 
     if user and thread_id:
         try:
-            await api.create_message(thread_id, "assistant", respuesta)
+            await api.create_message(thread_id, "assistant", result["answer"])
         except Exception as e:
             print(f"Error saving assistant message: {e}")
 
