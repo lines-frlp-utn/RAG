@@ -93,7 +93,7 @@ def decide_to_generate_from_context(state: GraphState):
             print(
                 f"---MAX RETRIES ({MAX_RETRIES}) ALCANZADO, NO SE PUEDE OBTENER CONTEXTO RELEVANTE---"
             )
-            return "not_supported_error"
+            return "generate"
         else:
             print(
                 f"---DECISION: CONTEXT NO RELEVANTE -> TRANSFORM QUERY (INTENTO {retries + 1})---"
@@ -143,16 +143,28 @@ def grade_generation_v_documents_and_question(state):
 
 # Error handlers
 async def handle_not_supported(state: GraphState):
+    # Add warning prefix to the existing answer
+    warning = "⚠️ ADVERTENCIA: La respuesta generada puede no estar completamente fundamentada en los documentos disponibles. "
+
+    existing_answer = state.get("answer")
+    final_answer = warning + existing_answer
+
     return {
         **state,
-        "answer": "Error: La generación no está fundamentada en los documentos. Revise la pregunta o el contexto.",
+        "answer": final_answer,
     }
 
 
 async def handle_not_useful(state: GraphState):
+    # Add warning prefix to the existing answer
+    warning = "⚠️ ADVERTENCIA: La respuesta inicial puede no abordar completamente su pregunta. "
+
+    existing_answer = state.get("answer") or ""
+    final_answer = warning + existing_answer
+
     return {
         **state,
-        "answer": "Error: La respuesta no responde adecuadamente a la pregunta. Intente reformular la pregunta.",
+        "answer": final_answer,
     }
 
 
@@ -191,5 +203,8 @@ workflow.add_conditional_edges(
         "not useful": "not_useful_error",
     },
 )
+
+workflow.add_edge("not_supported_error", END)
+workflow.add_edge("not_useful_error", END)
 
 app = workflow.compile()

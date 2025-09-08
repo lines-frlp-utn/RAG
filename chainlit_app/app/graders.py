@@ -45,7 +45,8 @@ answer_grader = answer_grader_prompt | llm | JsonOutputParser()
 re_write_prompt = PromptTemplate(
     template="""You a question re-writer that converts an input question to a better version that is optimized \n 
      for vectorstore retrieval. Look at the initial and formulate an improved question. \n
-     Here is the initial question: \n\n {question}. Improved question with no preamble: \n """,
+     Here is the initial question: \n\n {question}. Give the improved question with no preamble and no explanation. 
+     Mantain the original language of the question \n """,
     input_variables=["answer", "question"],
 )
 
