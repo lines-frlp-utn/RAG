@@ -3,7 +3,7 @@ from app.config import conf
 
 def start_aim_run():
     if conf.USE_AIM:
-        from aim import Run, Text
+        from aim import Run
 
         try:
             aim_run = Run(repo="aim://aim-server:53800", experiment="Lines chat")
@@ -30,5 +30,6 @@ def track_param(aim_run, name, value):
 
 def track_text(aim_run, name, text):
     if conf.USE_AIM:
+        from aim import Text
         aim_text = Text(text)
         aim_run.track(aim_text, name=name)

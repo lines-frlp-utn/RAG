@@ -2,8 +2,7 @@ from typing import Dict
 
 import chainlit as cl
 from app.aim_tracker import end_aim_run, start_aim_run
-from app.auth import Role, create_user, user_exists
-from app.clients.users_api import UsersApi
+from app.auth import Role, authenticate
 from app.config import conf
 from app.databases import RetrieveData, get_context_from_db, post_embeddings
 from app.embedding_generator import embedding_generator
@@ -16,7 +15,6 @@ from chainlit.input_widget import Select, Slider
 from chainlit.types import ThreadDict
 from langchain.memory import ConversationBufferMemory
 
-api = UsersApi(conf.USERS_API_FULL_URL)
 collection_name = "prueba_lines"
 
 
@@ -24,44 +22,10 @@ def format_docs(docs):
     return "\n\n".join([d.page_content for d in docs])
 
 
-# Callback de autenticación
+# Callback de autenticación con sistema robusto
 @cl.password_auth_callback
-def auth_callback(username: str, password: str):
-    try:
-        if username and password:
-            user = user_exists(username, password)
-            if user and user.exists is False:
-                user = create_user(username, Role.CLIENTE, password, name=username)
-                if user:
-                    print(f"User created: {username}")
-                    return cl.User(
-                        identifier=username,
-                        metadata={
-                            "role": Role.CLIENTE,
-                            "provider": "credentials",
-                            "display_name": username,
-                        },
-                    )
-                else:
-                    print(f"Error creating user: {username}")
-                    return None
-            elif user and user.exists:
-                print(f"User exists: {user}")
-                return cl.User(
-                    identifier=username,
-                    metadata={
-                        "role": user.role_name,
-                        "provider": "credentials",
-                        "display_name": username,
-                    },
-                )
-            else:
-                return None
-        else:
-            return None
-    except Exception as e:
-        print(f"Exception in auth_callback: {e}")
-        return None
+async def auth_callback(username: str, password: str):
+    return await authenticate(username, password)
 
 
 @cl.oauth_callback
@@ -72,31 +36,19 @@ def oauth_callback(
 ):
     email = raw_user_data.get("email")
     display_name = raw_user_data.get("name", "")
-    picture = raw_user_data.get("picture", "")
 
     if not email:
         print("OAuth callback: Email no proporcionado")
         return None
-    try:
-        user = user_exists(email, "")
-        if not user or user.exists is False:
-            print("Usuario no existe, creando con OAuth")
-            created = create_user(
-                email, Role.CLIENTE, "", provider_id, email, picture, name=display_name
-            )
-            if created:
-                role = Role.CLIENTE
-        else:
-            print("Usuario encontrado")
-            role = user.role_name
-
-    except Exception as e:
-        print(f"Error durante verificación/creación de usuario: {e}")
-        return None
 
     return cl.User(
         identifier=email,
-        metadata={"role": role, "provider": provider_id, "display_name": display_name},
+        metadata={
+            "role": Role.CLIENT.value,
+            "provider": provider_id,
+            "display_name": display_name,
+            "email": email,
+        },
     )
 
 
@@ -108,11 +60,10 @@ async def start():
     cl.user_session.set("aim_run", start_aim_run())
 
     if app_user:
-        try:
-            thread_data = await api.create_thread(app_user.identifier)
-            cl.user_session.set("thread_id", thread_data["thread_id"])
-        except Exception as e:
-            print(f"Error creating thread: {e}")
+        if not app_user.metadata.get("role"):
+            app_user.metadata["role"] = Role.CLIENT.value
+
+        cl.user_session.set("user", app_user)
 
     settings = await cl.ChatSettings(
         [
@@ -123,7 +74,7 @@ async def start():
                     "llama3.1",
                     "qwen2.5vl",
                 ],
-                initial_index=0,
+                initial_index=1,
             ),
             Select(
                 id="splitter",
@@ -180,42 +131,18 @@ async def resume(thread: ThreadDict):
     chainlit_thread_id = thread.get("id")
     cl.user_session.set("chainlit_thread_id", chainlit_thread_id)
 
-    app_user = cl.user_session.get("user")
     history_steps = thread.get("steps") or []
 
-    if app_user:
-        try:
-            thread_id = await api.get_thread_by_chainlit(chainlit_thread_id)
-
-            if thread_id is None:
-                thread_id = await api.get_latest_thread(app_user.identifier)
-
-            if thread_id is None:
-                data = await api.create_thread(app_user.identifier)
-                thread_id = data["thread_id"]
-
-            try:
-                await api.link_chainlit_thread(thread_id, chainlit_thread_id)
-            except Exception as e:
-                print(f"Linking error (non-fatal): {e}")
-
-            cl.user_session.set("thread_id", thread_id)
-
-            messages = await api.get_messages(thread_id)
-
-            for msg in messages:
-                if msg["sender"] == "user":
-                    memory.chat_memory.add_user_message(msg["content"])
-                else:
-                    memory.chat_memory.add_ai_message(msg["content"])
-
-            if len(history_steps) == 0:
-                for msg in messages:
-                    author = "Tú" if msg["sender"] == "user" else "Asistente"
-                    await cl.Message(content=msg["content"], author=author).send()
-
-        except Exception as e:
-            print(f"Error on resume: {e}")
+    if history_steps:
+        for step in history_steps:
+            if step.get("type") == "user_message":
+                content = step.get("output", "")
+                if content:
+                    memory.chat_memory.add_user_message(content)
+            elif step.get("type") == "assistant_message":
+                content = step.get("output", "")
+                if content:
+                    memory.chat_memory.add_ai_message(content)
 
     cl.user_session.set("memory", memory)
 
@@ -272,19 +199,10 @@ async def llm_step(query, context, **kwargs):
 @cl.on_message
 async def on_message(message: cl.Message):
     user = cl.user_session.get("user")
-    thread_id = cl.user_session.get("thread_id")
 
-    if user and thread_id:
-        try:
-            await api.create_message(thread_id, "user", message.content)
-        except Exception as e:
-            print(f"Error saving user message: {e}")
-
-    if message.elements and user.metadata["role"] == Role.CLIENTE:
+    if message.elements and user.metadata["role"] == Role.CLIENT.value:
         file = message.elements[0]
         settings = cl.user_session.get("settings")
-        # msg = cl.Message(content=f"Procesando archivo `{file.name}`...")
-        # await msg.send()
         try:
             # Extraer el texto del PDF
             print(f"Extrayendo texto de `{file.name}`...")
@@ -318,14 +236,6 @@ async def on_message(message: cl.Message):
             )
             print(f"Archivo `{file.name}` cargado exitosamente, `{result}`")
 
-            # Guardar en thread
-            success_message = f"Archivo `{file.name}` indexado correctamente."
-            if user and thread_id:
-                try:
-                    await api.create_message(thread_id, "assistant", success_message)
-                except Exception as e:
-                    print(f"Error saving success message: {e}")
-
             if not message.content or not message.content.strip():
                 return
 
@@ -333,19 +243,12 @@ async def on_message(message: cl.Message):
             error_msg = f"Error procesando el archivo `{file.name}`: {str(e)}"
             print(error_msg)
 
-            # Guardar mensaje de error en thread
-            if user and thread_id:
-                try:
-                    await api.create_message(thread_id, "assistant", error_msg)
-                except Exception as e:
-                    print(f"Error saving error message: {e}")
-
             if not message.content or not message.content.strip():
                 return
 
     if message.content and message.content.strip():
         msg = cl.Message(content="")
-    await msg.send()
+        await msg.send()
 
     query = message.content
     settings = cl.user_session.get("settings")

@@ -65,9 +65,6 @@ services:
       - DB_URL=http://vector-db
       - DB_PORT=8006
       - LLAMA_PARSE_API_KEY=${LLAMA_PARSE_API_KEY}
-      - USERS_API_URL=http://users_db
-      - USERS_API_PORT=8009
-      - USERS_API_FULL_URL=http://users_db:8009
       - CHAINLIT_AUTH_SECRET=${CHAINLIT_AUTH_SECRET}
       - OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID}
       - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET}
@@ -82,7 +79,6 @@ services:
       - "traefik.http.services.chainlit-router.loadbalancer.server.port=80"
     depends_on:
       - aim-server
-      - users_db
       - postgres
     restart: ${RESTART_POLICY:-no}
 
@@ -108,33 +104,7 @@ services:
       # - "traefik.http.middlewares.auth.basicauth.users=myuser:$$apr1$$HtC6EB1y$$Xn8dAvzj5l2FGFXlrT2Rl1"
     restart: ${RESTART_POLICY:-no}
 
-  mysql_db:
-    image: mysql:8.0
-    container_name: mysql_db
-    environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: usuarios_db
-    volumes:
-      - ./volumes/mysql_data/users:/var/lib/mysql
-    ports:
-      - "3306:3306"
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$MYSQL_ROOT_PASSWORD || exit 1"]
-    restart: ${RESTART_POLICY:-no}
 
-  users_db:
-    build:
-      context: users/
-      dockerfile: Dockerfile
-    container_name: users_db
-    depends_on:
-      mysql_db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: mysql+pymysql://root:password@mysql_db:3306/usuarios_db
-    ports:
-      - "8009:8009"
-    restart: ${RESTART_POLICY:-no}
     
   postgres:
     image: postgres:16-alpine
@@ -152,6 +122,21 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    restart: ${RESTART_POLICY:-no}
 
   datalayer-init:
     image: node:20-alpine
@@ -178,4 +163,6 @@ volumes:
   rag-volume:
     driver: local
   aim-volume:
+    driver: local
+  pgadmin-data:
     driver: local
