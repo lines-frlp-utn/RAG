@@ -143,7 +143,7 @@ def grade_generation_v_documents_and_question(state):
 # Error handlers
 async def handle_not_supported(state: GraphState):
     # Add warning prefix to the existing answer
-    warning = "**⚠️ ADVERTENCIA:** La respuesta generada puede no estar completamente fundamentada en los documentos disponibles.\n"
+    warning = "**⚠️ ADVERTENCIA:** La respuesta generada puede no estar completamente fundamentada en los documentos disponibles.\n\n"
 
     existing_answer = state.get("answer")
     final_answer = warning + existing_answer
@@ -157,7 +157,7 @@ async def handle_not_supported(state: GraphState):
 async def handle_not_useful(state: GraphState):
     # Add warning prefix to the existing answer
     warning = (
-        "**⚠️ ADVERTENCIA:** La respuesta inicial puede no abordar completamente su pregunta.\n"
+        "**⚠️ ADVERTENCIA:** La respuesta inicial puede no abordar completamente su pregunta.\n\n"
     )
 
     existing_answer = state.get("answer") or ""

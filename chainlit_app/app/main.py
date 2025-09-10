@@ -127,6 +127,7 @@ async def resume(thread: ThreadDict):
     cl.user_session.set("aim_run", start_aim_run())
     await update_settings(settings)
 
+    # Guardamos el thread id en la sesión (igual que en tu main original)
     chainlit_thread_id = thread.get("id")
     cl.user_session.set("chainlit_thread_id", chainlit_thread_id)
 
@@ -197,11 +198,13 @@ async def llm_step(query, context, **kwargs):
 
 @cl.on_message
 async def on_message(message: cl.Message):
+    # Thread id del mensaje (puede ser None si es chat global)
     thread_id = message.thread_id
 
     user = cl.user_session.get("user")
 
-    if message.elements and user.metadata["role"] == Role.CLIENT.value:
+    # Si se recibió un archivo y el usuario tiene rol CLIENT, procesarlo igual que antes
+    if message.elements and user and user.metadata["role"] == Role.CLIENT.value:
         file = message.elements[0]
         settings = cl.user_session.get("settings")
         try:
@@ -243,40 +246,45 @@ async def on_message(message: cl.Message):
         except Exception as e:
             error_msg = f"Error procesando el archivo `{file.name}`: {str(e)}"
             print(error_msg)
-
             if not message.content or not message.content.strip():
                 return
 
-    if message.content and message.content.strip():
-        msg = cl.Message(content="")
-        await msg.send()
+    if not (message.content and message.content.strip()):
+        return
+
+    msg = cl.Message(content="")
+    await msg.send()
 
     query = message.content
-    settings = cl.user_session.get("settings")
+    settings = cl.user_session.get("settings", {})
     state = {
         "question": query,
         "context": None,
         "answer": None,
         "grounded": None,
         "settings": {
-            "model": settings["model"],
-            "temperature": settings["temperature"],
-            "frequency_penalty": settings["frequency_penalty"],
+            "model": settings.get("model"),
+            "temperature": settings.get("temperature"),
+            "frequency_penalty": settings.get("frequency_penalty"),
         },
     }
+
     result = await langgraph_app.ainvoke(state)
-    msg.content = result["answer"]
+
+    answer_text = result.get("answer", "")
+    msg.content = answer_text
     await msg.update()
 
     if user and thread_id:
         try:
-            await api.create_message(thread_id, "assistant", result["answer"])
+            await cl.api.create_message(thread_id, "assistant", answer_text)
         except Exception as e:
             print(f"Error saving assistant message: {e}")
 
     memory = cl.user_session.get("memory")
-    memory.chat_memory.add_user_message(message.content)
-    memory.chat_memory.add_ai_message(msg.content)
+    if memory:
+        memory.chat_memory.add_user_message(message.content)
+        memory.chat_memory.add_ai_message(msg.content)
 
 
 @cl.on_chat_end
