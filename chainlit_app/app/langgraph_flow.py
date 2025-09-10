@@ -39,10 +39,19 @@ async def generate(state: GraphState):
     context = state["context"] if context_relevant else None
 
     if not context_relevant:
-        # Opcional: devolver mensaje directo sin llamar a llm_step
+        # Devolver mensaje directo sin llamar a llm_step
         return {**state, "answer": "No hay contexto relevante para responder esta pregunta."}
 
     answer = await llm_step(query=state["question"], context=context, **settings)
+    return {**state, "answer": answer}
+
+
+# Node: Generate answer without context
+async def generate_no_context(state: GraphState):
+    from app.main import llm_step
+
+    settings = state.get("settings", {})
+    answer = await llm_step(query=state["question"], context=None, **settings)
     return {**state, "answer": answer}
 
 
@@ -91,9 +100,9 @@ def decide_to_generate_from_context(state: GraphState):
     if grade != "yes":
         if retries >= MAX_RETRIES:
             print(
-                f"---MAX RETRIES ({MAX_RETRIES}) ALCANZADO, NO SE PUEDE OBTENER CONTEXTO RELEVANTE---"
+                f"---MAX RETRIES ({MAX_RETRIES}) ALCANZADO, NO SE PUEDE OBTENER CONTEXTO RELEVANTE -> GENERATE WITHOUT CONTEXT---"
             )
-            return "generate"
+            return "generate_no_context"
         else:
             print(
                 f"---DECISION: CONTEXT NO RELEVANTE -> TRANSFORM QUERY (INTENTO {retries + 1})---"
@@ -105,46 +114,36 @@ def decide_to_generate_from_context(state: GraphState):
 
 
 def grade_generation_v_documents_and_question(state):
-    """
-    Determines whether the generation is grounded in the document and answers question.
-
-    Args:
-        state (dict): The current graph state
-
-    Returns:
-        str: Decision for next node to call
-    """
-
-    print("---CHECK HALLUCINATIONS---")
     question = state["question"]
-    context = state["context"]
+    context = state.get("context")
     answer = state["answer"]
 
-    score = hallucination_grader.invoke({"context": context, "answer": answer})
-    grade = score["score"]
-
-    # Check hallucination
-    if grade == "yes":
-        print("---DECISION: GENERATION IS GROUNDED IN DOCUMENTS---")
-        # Check question-answering
-        print("---GRADE GENERATION vs QUESTION---")
-        score = answer_grader.invoke({"question": question, "answer": answer})
-        grade = score["score"]
-        if grade == "yes":
-            print("---DECISION: GENERATION ADDRESSES QUESTION---")
-            return "useful"
-        else:
-            print("---DECISION: GENERATION DOES NOT ADDRESS QUESTION---")
-            return "not useful"
+    # Evaluar grounding solo si hay contexto
+    if context:
+        score = hallucination_grader.invoke({"context": context, "answer": answer})
+        grounded = score["score"] == "yes"
     else:
-        print("---DECISION: GENERATION IS NOT GROUNDED IN DOCUMENTS, RE-TRY---")
+        grounded = None  # No hay contexto
+
+    if grounded is True:
+        # Contexto presente y fundamentado
+        score = answer_grader.invoke({"question": question, "answer": answer})
+        return "useful" if score["score"] == "yes" else "not useful"
+
+    elif grounded is False:
+        # Contexto presente pero no fundamentado
         return "not supported"
+
+    else:  # grounded is None → fallback sin contexto
+        # evaluamos si responde la pregunta
+        score = answer_grader.invoke({"question": question, "answer": answer})
+        return "useful" if score["score"] == "yes" else "not useful"
 
 
 # Error handlers
 async def handle_not_supported(state: GraphState):
     # Add warning prefix to the existing answer
-    warning = "⚠️ ADVERTENCIA: La respuesta generada puede no estar completamente fundamentada en los documentos disponibles. "
+    warning = "**⚠️ ADVERTENCIA:** La respuesta generada puede no estar completamente fundamentada en los documentos disponibles.\n"
 
     existing_answer = state.get("answer")
     final_answer = warning + existing_answer
@@ -157,7 +156,9 @@ async def handle_not_supported(state: GraphState):
 
 async def handle_not_useful(state: GraphState):
     # Add warning prefix to the existing answer
-    warning = "⚠️ ADVERTENCIA: La respuesta inicial puede no abordar completamente su pregunta. "
+    warning = (
+        "**⚠️ ADVERTENCIA:** La respuesta inicial puede no abordar completamente su pregunta.\n"
+    )
 
     existing_answer = state.get("answer") or ""
     final_answer = warning + existing_answer
@@ -174,6 +175,7 @@ workflow = StateGraph(GraphState)
 workflow.add_node("retrieve", retrieve)
 workflow.add_node("grade_context", grade_context)
 workflow.add_node("generate", generate)
+workflow.add_node("generate_no_context", generate_no_context)  # New node
 workflow.add_node("transform_query", transform_query)
 workflow.add_node("not_supported_error", handle_not_supported)
 workflow.add_node("not_useful_error", handle_not_useful)
@@ -188,6 +190,7 @@ workflow.add_conditional_edges(
         "retrieve": "retrieve",
         "generate": "generate",
         "transform_query": "transform_query",
+        "generate_no_context": "generate_no_context",  # New edge
         "not_supported_error": "not_supported_error",
     },
 )
@@ -197,6 +200,16 @@ workflow.add_edge("transform_query", "retrieve")
 workflow.add_conditional_edges(
     "generate",
     grade_generation_v_documents_and_question,
+    {
+        "not supported": "not_supported_error",
+        "useful": END,
+        "not useful": "not_useful_error",
+    },
+)
+
+workflow.add_conditional_edges(
+    "generate_no_context",
+    grade_generation_v_documents_and_question,  # Same evaluation as generate
     {
         "not supported": "not_supported_error",
         "useful": END,
