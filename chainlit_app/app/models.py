@@ -27,7 +27,11 @@ def get_conversational_answer(
         },
     )
 
-    system_prompt = f"""Eres un asistente llamado lines-bot. Siempre vas a responder en español.
+    if db_context is None or format_db_context(db_context) == "No hay contexto disponible":
+        system_prompt = """Eres un asistente llamado lines-bot. Siempre vas a responder en español.
+    """
+    else:
+        system_prompt = f"""Eres un asistente llamado lines-bot. Siempre vas a responder en español.
     El usuario no sabe que se te proporciona un contexto, no lo menciones.
     Para responder la consulta podes ayudarte con la informacion de contexto:
     {format_db_context(db_context)}
