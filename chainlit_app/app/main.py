@@ -3,7 +3,6 @@ from typing import Dict
 import chainlit as cl
 from app.aim_tracker import end_aim_run, start_aim_run
 from app.auth import Role, authenticate
-from app.config import conf
 from app.databases import RetrieveData, get_context_from_db, post_embeddings
 from app.embedding_generator import embedding_generator
 from app.langgraph_flow import app as langgraph_app
@@ -198,6 +197,8 @@ async def llm_step(query, context, **kwargs):
 
 @cl.on_message
 async def on_message(message: cl.Message):
+    thread_id = message.thread_id
+
     user = cl.user_session.get("user")
 
     if message.elements and user.metadata["role"] == Role.CLIENT.value:
