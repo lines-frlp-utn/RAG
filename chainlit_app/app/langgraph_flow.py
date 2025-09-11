@@ -39,7 +39,9 @@ async def retrieve(state: GraphState):
     question_for_retrieval = state["question"]
 
     print(f"---RETRIEVING CONTEXT (attempt {retries})---")
-    context = await vectordb_results_step(question_for_retrieval)
+    context = await vectordb_results_step(
+        question_for_retrieval, retries=retries
+    )  # Pasar retries como parámetro
     return {**state, "context": context, "retry_count": retries}
 
 
