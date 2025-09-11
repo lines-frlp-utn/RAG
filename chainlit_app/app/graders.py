@@ -27,6 +27,20 @@ hallucination_grader_prompt = PromptTemplate(
 
 hallucination_grader = hallucination_grader_prompt | llm | JsonOutputParser()
 
+classification_prompt = PromptTemplate(
+    template="""You are a classifier that determines if a question is a casual conversation or requires specific knowledge to answer. \n 
+    Here is the question: {question}
+    Classify the question as either 'conversation' or 'knowledge'. \n
+    Examples:
+    - 'Hola, ¿cómo estás?' is 'conversation'.
+    - '¿Qué dice el documento sobre X?' is 'knowledge'.
+    - 'Cuéntame un chiste' is 'conversation'.
+    - 'Explica el teorema de Pitágoras' is 'knowledge'.
+    Provide the classification as a JSON with a single key 'classification' and no preamble or explanation.""",
+    input_variables=["question"],
+)
+
+classification_grader = classification_prompt | llm | JsonOutputParser()
 
 answer_grader_prompt = PromptTemplate(
     template="""You are a grader assessing whether an answer is useful to resolve a question. \n 
