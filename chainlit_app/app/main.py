@@ -147,8 +147,12 @@ async def resume(thread: ThreadDict):
     cl.user_session.set("memory", memory)
 
 
-@cl.step
-async def vectordb_results_step(query: str):
+@cl.step(name="Buscando contexto en DB vectorial")
+async def vectordb_results_step(query: str, retries: int = 0):
+    # Actualizar el nombre del paso con el número de intentos
+    if retries > 0:
+        cl.context.current_step.name = f"Buscando contexto en DB vectorial (intento {retries})"
+
     settings = cl.user_session.get("settings")
     query_embedding = await cl.make_async(embedding_generator.get_embeddings)([query])
     query_embedding = query_embedding[0]
@@ -184,7 +188,7 @@ async def context_step(results: list[RetrieveData]) -> str:
     return context_texts
 
 
-@cl.step
+@cl.step(name="Respuesta del modelo")
 async def llm_step(query, context, **kwargs):
     chat_context = cl.chat_context.to_openai()
     print(f"Chat context: {chat_context}")

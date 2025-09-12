@@ -1,6 +1,12 @@
 from typing import Optional, TypedDict
 
-from app.graders import answer_grader, context_grader, hallucination_grader, question_rewriter
+from app.graders import (
+    answer_grader,
+    classification_grader,
+    context_grader,
+    hallucination_grader,
+    question_rewriter,
+)
 from langgraph.graph import END, START, StateGraph
 
 MAX_RETRIES = 3  # Maximum number of retries for context retrieval
@@ -14,6 +20,15 @@ class GraphState(TypedDict):
     settings: Optional[dict]
     context_grade: Optional[str]
     retry_count: Optional[int]
+    conversation_type: Optional[str]
+
+
+def classify_conversation(state: GraphState):
+    question: str = state["question"]
+    score = classification_grader.invoke({"question": question, "answer": ""})
+    classification = score["classification"].strip()
+    print(f"Conversation classification: {classification}")
+    return {**state, "conversation_type": classification}  # Usar return directo
 
 
 # Node: Retrieve context from vector database
@@ -21,12 +36,27 @@ async def retrieve(state: GraphState):
     retries = state.get("retry_count", 0) + 1
     from app.main import vectordb_results_step
 
-    # Ejemplo: agrego el número de intento a la consulta para que se modifique
-    question_for_retrieval = f"{state['question']} (intent {retries})"
+    question_for_retrieval = state["question"]
 
     print(f"---RETRIEVING CONTEXT (attempt {retries})---")
-    context = await vectordb_results_step(question_for_retrieval)
+    context = await vectordb_results_step(
+        question_for_retrieval, retries=retries
+    )  # Pasar retries como parámetro
     return {**state, "context": context, "retry_count": retries}
+
+
+# Nueva función para decidir basado en clasificación (cambiar a def)
+def decide_based_on_classification(state: GraphState):
+    classification = state.get("conversation_type")
+    if classification:
+        classification = classification.strip()
+    print(f"Classification in decide: {classification}")
+    if classification == "conversation":
+        print("---DECISION: CONVERSACIÓN NORMAL -> GENERATE WITHOUT CONTEXT---")
+        return "generate_no_context"
+    else:
+        print("---DECISION: REQUIERE CONOCIMIENTO -> RETRIEVE---")
+        return "retrieve"
 
 
 # Node: Generate answer from context
@@ -118,12 +148,12 @@ def grade_generation_v_documents_and_question(state):
     context = state.get("context")
     answer = state["answer"]
 
-    # Evaluar grounding solo si hay contexto
-    if context:
+    # Evaluar grounding solo si hay contexto significativo (no vacío ni solo espacios)
+    if context and context.strip():
         score = hallucination_grader.invoke({"context": context, "answer": answer})
         grounded = score["score"] == "yes"
     else:
-        grounded = None  # No hay contexto
+        grounded = None  # No hay contexto significativo
 
     if grounded is True:
         # Contexto presente y fundamentado
@@ -172,15 +202,27 @@ async def handle_not_useful(state: GraphState):
 # Build the graph
 workflow = StateGraph(GraphState)
 
+workflow.add_node("classify_conversation", classify_conversation)
 workflow.add_node("retrieve", retrieve)
 workflow.add_node("grade_context", grade_context)
 workflow.add_node("generate", generate)
-workflow.add_node("generate_no_context", generate_no_context)  # New node
+workflow.add_node("generate_no_context", generate_no_context)
 workflow.add_node("transform_query", transform_query)
 workflow.add_node("not_supported_error", handle_not_supported)
 workflow.add_node("not_useful_error", handle_not_useful)
 
-workflow.add_edge(START, "retrieve")
+# Cambiar el inicio del workflow
+workflow.add_edge(START, "classify_conversation")
+
+workflow.add_conditional_edges(
+    "classify_conversation",
+    decide_based_on_classification,
+    {
+        "retrieve": "retrieve",
+        "generate_no_context": "generate_no_context",
+    },
+)
+
 workflow.add_edge("retrieve", "grade_context")
 
 workflow.add_conditional_edges(
@@ -190,7 +232,7 @@ workflow.add_conditional_edges(
         "retrieve": "retrieve",
         "generate": "generate",
         "transform_query": "transform_query",
-        "generate_no_context": "generate_no_context",  # New edge
+        "generate_no_context": "generate_no_context",
         "not_supported_error": "not_supported_error",
     },
 )
@@ -209,7 +251,7 @@ workflow.add_conditional_edges(
 
 workflow.add_conditional_edges(
     "generate_no_context",
-    grade_generation_v_documents_and_question,  # Same evaluation as generate
+    grade_generation_v_documents_and_question,
     {
         "not supported": "not_supported_error",
         "useful": END,
