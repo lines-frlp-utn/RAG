@@ -4,8 +4,8 @@ WORKDIR /code
 
 RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=requirements.txt,target=requirements.txt \
-    uv pip install -r requirements.txt --system
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv pip install --system -r pyproject.toml
 
 COPY main.py .
 
