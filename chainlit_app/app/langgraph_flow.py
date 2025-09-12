@@ -26,6 +26,7 @@ class GraphState(TypedDict):
 def classify_conversation(state: GraphState):
     question: str = state["question"]
     score = classification_grader.invoke({"question": question, "answer": ""})
+    print(f"Reason: {score['reason']}")
     classification = score["classification"].strip()
     print(f"Conversation classification: {classification}")
     return {**state, "conversation_type": classification}  # Usar return directo

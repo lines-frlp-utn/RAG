@@ -39,24 +39,25 @@ Provide the binary score as a JSON with a single key 'score' and no preamble or 
 hallucination_grader = hallucination_grader_prompt | llm | JsonOutputParser()
 
 classification_prompt = PromptTemplate(
-    template="""You are a classifier that determines if a question is a casual conversation or requires specific knowledge to answer. \n 
-    Here is the question: {question}
-    Classify the question as either 'conversation' or 'knowledge'. \n
-    Examples:
-    - 'Hola, ¿cómo estás?' is 'conversation'.
-    - '¿Qué dice el documento sobre X?' is 'knowledge'.
-    - 'Cuéntame un chiste' is 'conversation'.
-    - 'Explica el teorema de Pitágoras' is 'knowledge'.
-    - '¿Cuál es la capital de Francia?' is 'knowledge'.
-    - '¿Qué opinas del clima hoy?' is 'conversation'.
-    - '¿Quién ganó la Copa del Mundo en 2018?' is 'knowledge'.
-    - '¿Quieres charlar un rato?' is 'conversation'.
-    - '¿Qué es la fotosíntesis?' is 'knowledge'.
-    - '¿Cómo estuvo tu día?' is 'conversation'.
-    - Cualquier cosa relacionada con saludos, despedidas, charlas informales o preguntas personales es 'conversation'.
-    - Cualquier cosa que busque información factual, explicaciones, datos o conocimiento específico es 'knowledge'.
-    - cualquier cosa que sea una consulta sobre la UTN, la facultad, universidad, FRlP es 'knowledge'.
-    Provide the classification as a JSON with a single key 'classification' and no preamble or explanation.""",
+    template="""Eres un clasificador que determina si una pregunta es una conversación casual o requiere conocimientos para ser respondida.
+    Aquí está la pregunta: {question}
+    Clasifica la pregunta como 'conversation' o 'knowledge'.
+    - Cualquier cosa relacionada con saludos, despedidas o charlas informales es 'conversation'.
+    - Cualquier cosa que necesite informacion, datos, o contexto para ser respondida es 'knowledge'.
+    - cualquier cosa que sea una consulta sobre la UTN, la facultad, universidad, FRlP o alumnos es 'knowledge'.
+    - cualquier cosa que no sepas su respuesta o no tengas capacidad para responder es 'knowledge'.
+    Ejemplos:
+    - 'Hola, ¿cómo estás?' es 'conversation'.
+    - '¿Qué dice el documento sobre X?' es 'knowledge'.
+    - 'Como me anoto a un curso?' es 'knowledge'.
+    - 'Cuéntame un chiste' es 'conversation'.
+    - 'Explica el teorema de Pitágoras' es 'knowledge'.
+    - '¿Cuál es la capital de Francia?' es 'knowledge'.
+    - '¿Qué opinas del clima hoy?' es 'conversation'.
+    - '¿Quién ganó la Copa del Mundo en 2018?' es 'knowledge'.
+    - '¿Qué es la fotosíntesis?' es 'knowledge'.
+    - '¿Cómo estuvo tu día?' es 'conversation'.
+    Proporciona la clasificación como un JSON con una clave 'classification' y otra clave 'reason' explicando por que decidiste esa clasificacion. Solo el JSON, sin preámbulo ni explicación.""",
     input_variables=["question"],
 )
 
