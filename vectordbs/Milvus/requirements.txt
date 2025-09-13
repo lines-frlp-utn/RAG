@@ -1,6 +1,0 @@
-pymilvus
-fastapi
-uvicorn
-python-multipart
-pydantic
-pymilvus[model]

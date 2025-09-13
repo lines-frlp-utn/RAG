@@ -3,7 +3,7 @@
     "dockerComposeFile": ["../compose.milvus.yml", "compose.extend.yml"],
 
     "service": "dev-chainlit-app",
-    "runServices": ["dev-chainlit-app", "mysql_db", "users_db"
+    "runServices": ["dev-chainlit-app","datalayer-init","postgres"
     // ,"aim-server", "aim-ui" // AIM
     // ,"etcd", "minio", "standalone", "attu" // MILVUS
     ],
