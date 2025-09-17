@@ -9,7 +9,7 @@ def test_upload():
         collection_name="CryptoCurrency",
     )
     upload_pdf_to_database(
-        text_file="./tests/pdfs_prueba/Ethereum.pdf",
+        text_file="./tests/fixture/Ethereum.pdf",
         theme="Ethereum",
         subtheme="-",
         collection_name="CryptoCurrency",
