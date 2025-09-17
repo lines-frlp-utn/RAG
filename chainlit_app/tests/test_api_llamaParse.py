@@ -27,7 +27,7 @@ def test_api_llamaParse():
     doc_text = text_splitter.create_documents(doc_text, metadatas=[{"source":file_path,"theme":"-","subtheme":"-"}])
     chunks=text_splitter.split_documents(documents=doc_text)
 
-    with open('./tests/output_from_llamaparse.txt', 'w', encoding='utf-8') as f:
+    with open('./tests/fixture/output_from_llamaparse.txt', 'w', encoding='utf-8') as f:
         for chunk in chunks:
             f.write(chunk.page_content)
     
