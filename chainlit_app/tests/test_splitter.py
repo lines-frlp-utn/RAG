@@ -36,7 +36,7 @@ def split_semantic(text: str, max_length: int = 4000) -> list[str]:
 
 # Ejecutar test
 if __name__ == "__main__":
-    pdf_path = "/workspace/chainlit_app/tests/pdfs_prueba/bitcoin_es.pdf"
+    pdf_path = "/workspace/chainlit_app/tests/fixture/bitcoin_es.pdf"
     texto_pdf = extract_text_from_pdf(pdf_path)
     chunks = split_semantic(texto_pdf)
     for i, chunk in enumerate(chunks):

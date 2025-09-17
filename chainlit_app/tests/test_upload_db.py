@@ -3,7 +3,7 @@ def test_upload():
 
     # TODO add route to upload
     upload_pdf_to_database(
-        text_file="./tests/pdfs_prueba/bitcoin_es.pdf",
+        text_file="./tests/fixture/bitcoin_es.pdf",
         theme="Bitcoin",
         subtheme="-",
         collection_name="CryptoCurrency",
