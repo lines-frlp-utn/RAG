@@ -4,7 +4,7 @@ def test_upload():
     from vectordbs.Chroma.main import upload_pdf_to_vector_db
 
     embedding_generator = EmbeddingGenerator()
-    pdf_path = "./tests/pdfs_prueba/algoritmos.pdf"  # Reemplazar con la ruta del archivo PDF
+    pdf_path = "./tests/fixture/algoritmos.pdf"  # Reemplazar con la ruta del archivo PDF
     texts = extract_text_from_pdf(pdf_path)
     data = embedding_generator.format_for_database(texts)
     collection_name = "algo"

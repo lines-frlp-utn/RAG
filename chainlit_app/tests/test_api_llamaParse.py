@@ -7,7 +7,7 @@ def test_api_llamaParse():
     
 
     api_key="llx-GnR2Ac9d0MsVMo5M8F4RVEQDDKAEaQVAvDc7DN15YjYMc7Sb"
-    file_path = "./tests/pdfs_prueba/algoritmos.pdf"
+    file_path = "./tests/fixture/algoritmos.pdf"
 
     parser = LlamaParse(
         api_key=api_key,  # can also be set in your env as LLAMA_CLOUD_API_KEY
