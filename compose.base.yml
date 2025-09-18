@@ -2,7 +2,7 @@ services:
 
   ollama:
     container_name: ollama
-    image: ollama/ollama:0.11.4
+    image: ollama/ollama:0.11.10
     volumes:
       - ollama:/root/.ollama
     ports:
@@ -27,7 +27,6 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-
   
   aim-server:
     image: aimstack/aim:3.29.1
@@ -66,12 +65,10 @@ services:
       - DB_URL=http://vector-db
       - DB_PORT=8006
       - LLAMA_PARSE_API_KEY=${LLAMA_PARSE_API_KEY}
-      - USERS_API_URL=http://users_db
-      - USERS_API_PORT=8009
-      - LITERAL_API_KEY=${LITERAL_API_KEY}
       - CHAINLIT_AUTH_SECRET=${CHAINLIT_AUTH_SECRET}
       - OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID}
       - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET}
+      - DATABASE_URL=postgresql://chainlit:chainlit@chainlit_pg:5432/chainlit
       - USE_AIM=true
     volumes:
       - rag-volume:/chainlit_app/database
@@ -82,6 +79,7 @@ services:
       - "traefik.http.services.chainlit-router.loadbalancer.server.port=80"
     depends_on:
       - aim-server
+      - postgres
     restart: ${RESTART_POLICY:-no}
 
   traefik:
@@ -106,33 +104,54 @@ services:
       # - "traefik.http.middlewares.auth.basicauth.users=myuser:$$apr1$$HtC6EB1y$$Xn8dAvzj5l2FGFXlrT2Rl1"
     restart: ${RESTART_POLICY:-no}
 
-  mysql_db:
-    image: mysql:8.0
-    container_name: mysql_db
+
+    
+  postgres:
+    image: postgres:16-alpine
+    container_name: chainlit_pg
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: usuarios_db
-    volumes:
-      - ./volumes/mysql_data/users:/var/lib/mysql
+      POSTGRES_DB: chainlit
+      POSTGRES_USER: chainlit
+      POSTGRES_PASSWORD: chainlit
     ports:
-      - "3306:3306"
+      - "5432:5432"
+    volumes:
+      - ./volumes/pg:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$MYSQL_ROOT_PASSWORD || exit 1"]
+      test: ["CMD-SHELL", "pg_isready -U chainlit -d chainlit"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - postgres
     restart: ${RESTART_POLICY:-no}
 
-  users_db:
-    build:
-      context: users/
-      dockerfile: Dockerfile
-    container_name: users_db
-    depends_on:
-      mysql_db:
-        condition: service_healthy
+  datalayer-init:
+    image: node:20-alpine
+    container_name: chainlit_datalayer_init
     environment:
-      DATABASE_URL: mysql+pymysql://root:password@mysql_db:3306/usuarios_db
-    ports:
-      - "8009:8009"
-    restart: ${RESTART_POLICY:-no}
+      DATABASE_URL: postgresql://chainlit:chainlit@chainlit_pg:5432/chainlit
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "apk add --no-cache git &&
+              git clone --depth=1 https://github.com/Chainlit/chainlit-datalayer /dl &&
+              cd /dl &&
+              npx prisma migrate deploy --schema=prisma/schema.prisma"
+    restart: "no"
 
 networks:
   default:
@@ -144,4 +163,6 @@ volumes:
   rag-volume:
     driver: local
   aim-volume:
+    driver: local
+  pgadmin-data:
     driver: local
