@@ -2,10 +2,11 @@ import os
 import sys
 import pymupdf4llm
 
+from app.config import conf
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-DEFAULT_MAX_LENGTH = 4000
+
 
 # Función para extraer el texto de un PDF a formato Markdown
 def extract_text_from_pdf_to_markdown(pdf_path):
@@ -48,7 +49,7 @@ def test_markdown_splitter():
 
     # Verificar que ningún fragmento excede el límite máximo de DEFAULT_MAX_LENGTH caracteres
     for chunk in chunks:
-        assert len(chunk) <= DEFAULT_MAX_LENGTH, "Un fragmento excede la longitud máxima permitida"
+        assert len(chunk) <= conf.DEFAULT_MAX_LENGTH, "Un fragmento excede la longitud máxima permitida"
 
 def test_semantic_splitter():
     """
@@ -66,7 +67,7 @@ def test_semantic_splitter():
     Args:
         No recibe parámetros directamente, pero depende de:
         - ../fixture/bitcoin_es.pdf: Documento de prueba en la carpeta fixtures
-        - DEFAULT_MAX_LENGTH: Constante que define el tamaño máximo de fragmentos
+        - DEFAULT_MAX_LENGTH: Varaible de entorno que define el tamaño máximo de fragmentos
         
     Raises:
         AssertionError: Si no se generan fragmentos o alguno excede el tamaño máximo
@@ -90,24 +91,11 @@ def test_semantic_splitter():
     pdf_path = os.path.join(os.path.dirname(__file__), "../fixture/bitcoin_es.pdf")
 
     # Dividir el texto en fragmentos usando el splitter de Markdown
-    chunks = split_semantic(pdf_path, max_length=DEFAULT_MAX_LENGTH)
+    chunks = split_semantic(pdf_path, max_length=conf.DEFAULT_MAX_LENGTH)
 
     # Verificar que se generaron fragmentos (test básico de funcionalidad)
     assert len(chunks) > 0, "No se generaron fragmentos del PDF"
 
     # Verificar que ningún fragmento excede el límite máximo de DEFAULT_MAX_LENGTH caracteres
     for chunk in chunks:
-        assert len(chunk) <= DEFAULT_MAX_LENGTH, "Un fragmento excede la longitud máxima permitida"
-
-
-# Test anterior
-# if __name__ == "__main__":
-#     pdf_path = "/workspace/chainlit_app/tests/fixture/bitcoin_es.pdf"
-#     texto_pdf = extract_text_from_pdf_to_markdown(pdf_path)
-#     chunks = split_semantic(texto_pdf)
-#     for i, chunk in enumerate(chunks):
-#         print(f"\n--- Chunk {i + 1} ---\n{chunk[:300]}...")
-
-
-# para ejecutar el test:
-# python -m chainlit_app.tests.test_splitter
+        assert len(chunk) <= conf.DEFAULT_MAX_LENGTH, "Un fragmento excede la longitud máxima permitida"
