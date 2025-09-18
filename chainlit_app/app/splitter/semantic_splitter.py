@@ -1,8 +1,6 @@
 from app.embedding_generator import embedding_generator
 from langchain_experimental.text_splitter import SemanticChunker
-
-# Parámetros de chunking
-DEFAULT_MAX_LENGTH = 4000
+from app.config import conf
 
 semantic_splitter = SemanticChunker(
     embeddings=embedding_generator,
@@ -14,7 +12,7 @@ semantic_splitter = SemanticChunker(
 
 def split_semantic(
     text: str,
-    max_length: int = DEFAULT_MAX_LENGTH,
+    max_length: int = conf.DEFAULT_MAX_LENGTH,
 ) -> list[str]:
     """
     Aplica splitting semántico sobre el texto completo.
