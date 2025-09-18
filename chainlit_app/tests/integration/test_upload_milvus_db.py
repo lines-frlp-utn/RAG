@@ -5,7 +5,7 @@ import os
 from sentence_transformers import SentenceTransformer
 
 # Agregar el directorio raíz al path para importar el módulo Milvus
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
 # Inicializar modelo de embeddings con dimensión conocida y verificable
 embedding_fn = SentenceTransformer('all-mpnet-base-v2', device='cpu')
@@ -160,7 +160,7 @@ def test_get_context_with_filters():
     query_data = QueryData(
         collection_name=collection_name,
         query=query,  # Texto original de la consulta
-        query_embedding=query_embedding.tolist()  # Embedding como lista de floats
+        query_embedding=query_embedding
     )
     
     # Ejecución de la búsqueda semántica con filtros aplicados
