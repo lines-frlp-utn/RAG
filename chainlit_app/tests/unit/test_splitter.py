@@ -17,7 +17,6 @@ semantic_splitter = SemanticChunker(
     min_chunk_size=100,
 )
 
-
 # Función para extraer el texto de un PDF
 def extract_text_from_pdf(pdf_path):
     return pymupdf4llm.to_markdown(pdf_path)
@@ -58,7 +57,7 @@ def test_markdown_splitter():
     from app.splitter.markdown_splitter import split_markdown_text
 
     # Cargar documento PDF de prueba desde la carpeta fixtures
-    pdf_path = os.path.join(os.path.dirname(__file__), "./fixture/bitcoin_es.pdf")
+    pdf_path = os.path.join(os.path.dirname(__file__), "../fixture/bitcoin_es.pdf")
 
     # Extraer texto del PDF para procesamiento
     texto_pdf = extract_text_from_pdf(pdf_path)
