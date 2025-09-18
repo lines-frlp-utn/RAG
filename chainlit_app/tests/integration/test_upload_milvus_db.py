@@ -13,7 +13,7 @@ embedding_fn = SentenceTransformer('all-mpnet-base-v2', device='cpu')
 
 # ______________________________________ TESTS ______________________________________
 
-def test_upload_pdf_to_milvus_db():
+def test_upload_embedding_to_vector_db():
     """
     Prueba de integración para la carga de embeddings a Milvus con datos simulados.
     
@@ -55,7 +55,7 @@ def test_upload_pdf_to_milvus_db():
     - El test incluye manejo de excepciones para debugging detallado
     - Los textos de prueba son históricamente relevantes para IA
     """
-    from vectordbs.Milvus.main import upload_pdf_to_vector_db
+    from vectordbs.Milvus.main import upload_embedding_to_vector_db
     
     # Textos de ejemplo cuidadosamente seleccionados sobre historia de la IA
     docs = [
@@ -100,7 +100,7 @@ def test_upload_pdf_to_milvus_db():
 
     # Ejecución con manejo robusto de excepciones
     try:
-        result = upload_pdf_to_vector_db(dataWithEmbeddings=data, collection_name=collection_name)
+        result = upload_embedding_to_vector_db(dataWithEmbeddings=data, collection_name=collection_name)
         print("Upload successful:", result)
     except Exception as e:
         print("Error:", str(e))

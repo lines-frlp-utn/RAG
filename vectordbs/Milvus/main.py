@@ -57,7 +57,7 @@ def create_schema():
     return schema
 
 
-def upload_pdf_to_vector_db(dataWithEmbeddings, collection_name):
+def upload_embedding_to_vector_db(dataWithEmbeddings, collection_name):
     print("ENTRANDO A LA FUNCION UPLOAD")
 
     if client.has_collection(collection_name=collection_name):
