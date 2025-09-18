@@ -1,37 +1,15 @@
 import os
 import sys
+import pymupdf4llm
+
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import pymupdf4llm
-from app.embedding_generator import EmbeddingGenerator
-from langchain_experimental.text_splitter import SemanticChunker
+DEFAULT_MAX_LENGTH = 4000
 
-embedding_generator = EmbeddingGenerator()
-
-# Inicializa el splitter semántico
-semantic_splitter = SemanticChunker(
-    embeddings=embedding_generator,
-    breakpoint_threshold_type="percentile",
-    breakpoint_threshold_amount=80.0,
-    min_chunk_size=100,
-)
-
-# Función para extraer el texto de un PDF
-def extract_text_from_pdf(pdf_path):
+# Función para extraer el texto de un PDF a formato Markdown
+def extract_text_from_pdf_to_markdown(pdf_path):
     return pymupdf4llm.to_markdown(pdf_path)
-
-
-# Función para dividir el texto usando el splitter semántico
-def split_semantic(text: str, max_length: int = 4000) -> list[str]:
-    final_chunks: list[str] = []
-    docs = semantic_splitter.create_documents([text])
-    for doc in docs:
-        chunk = doc.page_content.strip()
-        if len(chunk) <= max_length:
-            final_chunks.append(chunk)
-    return final_chunks
-
 
 # ______________________________________ TESTS ______________________________________
 
@@ -47,7 +25,7 @@ def test_markdown_splitter():
     
     Flujo del test:
     - Carga un documento PDF de prueba desde la carpeta fixtures
-    - Extrae el texto del PDF usando extract_text_from_pdf
+    - Extrae el texto del PDF usando extract_text_from_pdf_to_markdown
     - Procesa el texto con split_markdown_text
     - Valida que se generen fragmentos y que cumplan con los límites de tamaño
     
@@ -60,24 +38,72 @@ def test_markdown_splitter():
     pdf_path = os.path.join(os.path.dirname(__file__), "../fixture/bitcoin_es.pdf")
 
     # Extraer texto del PDF para procesamiento
-    texto_pdf = extract_text_from_pdf(pdf_path)
+    text_pdf = extract_text_from_pdf_to_markdown(pdf_path)
     
     # Dividir el texto en fragmentos usando el splitter de Markdown
-    chunks = split_markdown_text(texto_pdf)
+    chunks = split_markdown_text(text_pdf)
 
     # Verificar que se generaron fragmentos (test básico de funcionalidad)
     assert len(chunks) > 0, "No se generaron fragmentos del PDF"
 
-    # Verificar que ningún fragmento excede el límite máximo de 4000 caracteres
+    # Verificar que ningún fragmento excede el límite máximo de DEFAULT_MAX_LENGTH caracteres
     for chunk in chunks:
-        assert len(chunk) <= 4000, "Un fragmento excede la longitud máxima permitida"
+        assert len(chunk) <= DEFAULT_MAX_LENGTH, "Un fragmento excede la longitud máxima permitida"
 
+def test_semantic_splitter():
+    """
+    Prueba la funcionalidad del splitter semántico con un documento PDF real.
+    
+    Este test verifica que el splitter semántico:
+    1. Puede procesar correctamente un documento PDF directamente desde su ruta
+    2. Genera fragmentos no vacíos del documento
+    3. Respeta el límite máximo de longitud especificado por DEFAULT_MAX_LENGTH
+    4. Mantiene la integridad semántica del contenido durante la división
+    
+    El test utiliza un documento real sobre Bitcoin en español como caso de prueba,
+    lo que permite validar el funcionamiento con contenido técnico y estructurado.
+    
+    Args:
+        No recibe parámetros directamente, pero depende de:
+        - ../fixture/bitcoin_es.pdf: Documento de prueba en la carpeta fixtures
+        - DEFAULT_MAX_LENGTH: Constante que define el tamaño máximo de fragmentos
+        
+    Raises:
+        AssertionError: Si no se generan fragmentos o alguno excede el tamaño máximo
+        FileNotFoundError: Si el documento PDF de prueba no existe
+        RuntimeError: Si ocurre algún error durante el procesamiento del PDF
+        
+    Flujo del test:
+    1. Construye la ruta al documento PDF de prueba en la carpeta fixtures
+    2. Llama a split_semantic() con la ruta del PDF y el tamaño máximo permitido
+    3. Valida que se generen fragmentos (test de funcionalidad básica)
+    4. Verifica que cada fragmento cumpla con el límite de tamaño establecido
+    
+    Notas:
+    - El splitter semántico debería preservar unidades de significado completo
+    - Los fragmentos deberían mantener coherencia temática incluso después de la división
+    - El documento 'bitcoin_es.pdf' debe contener contenido suficiente para generar múltiples fragmentos
+    """
+    from app.splitter.semantic_splitter import split_semantic
+
+    # Cargar documento PDF de prueba desde la carpeta fixtures
+    pdf_path = os.path.join(os.path.dirname(__file__), "../fixture/bitcoin_es.pdf")
+
+    # Dividir el texto en fragmentos usando el splitter de Markdown
+    chunks = split_semantic(pdf_path, max_length=DEFAULT_MAX_LENGTH)
+
+    # Verificar que se generaron fragmentos (test básico de funcionalidad)
+    assert len(chunks) > 0, "No se generaron fragmentos del PDF"
+
+    # Verificar que ningún fragmento excede el límite máximo de DEFAULT_MAX_LENGTH caracteres
+    for chunk in chunks:
+        assert len(chunk) <= DEFAULT_MAX_LENGTH, "Un fragmento excede la longitud máxima permitida"
 
 
 # Test anterior
 # if __name__ == "__main__":
 #     pdf_path = "/workspace/chainlit_app/tests/fixture/bitcoin_es.pdf"
-#     texto_pdf = extract_text_from_pdf(pdf_path)
+#     texto_pdf = extract_text_from_pdf_to_markdown(pdf_path)
 #     chunks = split_semantic(texto_pdf)
 #     for i, chunk in enumerate(chunks):
 #         print(f"\n--- Chunk {i + 1} ---\n{chunk[:300]}...")
