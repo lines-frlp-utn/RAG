@@ -1,14 +1,8 @@
-import sys
-import os
 import httpx
-import hashlib
 import pytest
 
 from app.config import conf
 from sentence_transformers import SentenceTransformer
-
-# Agregar el directorio raíz al path para importar el módulo Milvus
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
 # Inicializar modelo de embeddings con dimensión conocida y verificable
 embedding_fn = SentenceTransformer('all-mpnet-base-v2', device='cpu')
@@ -93,27 +87,71 @@ async def test_upload_embeddings_endpoint():
             timeout=30.0  # Timeout opcional para evitar bloqueos
         )
     
-        # Validación principal: el endpoint debe responder con éxito (200)
+        # Validación: el endpoint debe responder con éxito (200)
         assert response.status_code == 200
 
 
-# def test_retrive():
-#     from vectordbs.Milvus.main import QueryData
-
-#     # Configuración de la colección de prueba (debe coincidir con la de inserción)
-#     collection_name = 'Prueba'
+@pytest.mark.asyncio
+async def test_get_context_endpoint():
+    """
+    Prueba de integración asíncrona para el endpoint de obtención de contexto.
     
-#     # Consulta de prueba
-#     query = "who was Alan Turing?"
+    Este test verifica el endpoint REST API '/get-context' que realiza búsqueda semántica
+    en la base de datos vectorial Milvus usando una consulta textual y su embedding.
 
-#     # Generación del embedding vectorial para la consulta
-#     query_embedding = embedding_fn.encode(query) # Extraer el primer embedding de la lista
-    
-#     # Construcción del objeto de consulta con la estructura esperada por el sistema
-#     query_data = QueryData(
-#         collection_name=collection_name,
-#         query=query,  # Texto original de la consulta
-#         query_embedding=query_embedding
-#     )
+    Objetivos del test:
+    1. Validar que el endpoint '/get-context' procesa correctamente consultas semánticas
+    2. Verificar la comunicación completa: desde la consulta hasta la respuesta contextual
+    3. Comprobar que el endpoint responde con status HTTP 200 (éxito)
+    4. Asegurar que los parámetros requeridos son aceptados correctamente
+    5. Testear el flujo asíncrono de búsqueda semántica con embeddings
 
+    Flujo detallado:
+    1. Configura el nombre de la colección donde se realizó la inserción previa
+    2. Prepara una consulta de prueba relevante para los datos insertados
+    3. Genera el embedding vectorial para la consulta usando el modelo configurado
+    4. Realiza una petición HTTP POST asíncrona al endpoint de obtención de contexto
+    5. Incluye todos los parámetros requeridos: collection_name, query y query_embedding
+    6. Valida que el servidor responda con status code 200 indicando éxito
+
+    Este test asume que:
+    - La colección 'Prueba' existe y contiene datos previamente insertados
+    - Los datos incluyen información sobre Alan Turing e inteligencia artificial
+    - El mismo modelo de embeddings se usó para inserción y búsqueda
+
+    Args:
+        No recibe parámetros directos, pero depende de:
+        - embedding_fn: Modelo SentenceTransformer previamente inicializado
+        - conf.DB_URL: URL de la base de datos desde configuración
+        - conf.DB_PORT: Puerto de la base de datos desde configuración
+
+    Raises:
+        AssertionError: Si el status code de la respuesta no es 200
+        httpx.HTTPError: Si hay errores de conexión con el endpoint
+        Exception: Para cualquier otro error durante la ejecución
+
+    Notas importantes:
+    - La consulta "who was Alan Turing?" está diseñada para encontrar coincidencias
+    - El embedding se genera con el mismo modelo usado para los datos insertados
+    - El timeout de 30 segundos previene bloqueos en búsquedas lentas
+    - El test valida el status code pero no el contenido de la respuesta
+    """
+    # Configuración de la colección de prueba (debe coincidir con la de inserción)
+    collection_name = 'Prueba'
     
+    # Consulta de prueba
+    query = "who was Alan Turing?"
+
+    # Generación del embedding vectorial para la consulta
+    query_embedding = embedding_fn.encode(query) # Extraer el primer embedding de la lista
+
+    # Usar httpx.AsyncClient para requests asíncronos
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{conf.DB_URL}:{conf.DB_PORT}/get-context",
+            json={"collection_name": collection_name, "query": query, "query_embedding": query_embedding[0].tolist()},
+            timeout=30.0  # Timeout opcional para evitar bloqueos
+        )
+    
+        # Validación: el endpoint debe responder con éxito (200)
+        assert response.status_code == 200
