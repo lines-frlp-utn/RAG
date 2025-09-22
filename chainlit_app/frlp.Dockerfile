@@ -13,7 +13,8 @@ RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
 # Copiamos todo el contenido del proyecto. .dockerignore se encarga de ignorar los archivos que no queremos copiar
 COPY . .
 
-RUN rm -f .chainlit/no_upload_config.toml
+COPY .chainlit/no_upload_config.toml /code/.chainlit/config.toml
+COPY public-frlp /code/public
 
 EXPOSE 80
 CMD ["python", "-m", "chainlit", "run", "app/main.py", "--host", "0.0.0.0", "--port", "80"]

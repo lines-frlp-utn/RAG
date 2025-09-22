@@ -3,6 +3,7 @@ from typing import Dict
 import chainlit as cl
 from app.aim_tracker import end_aim_run, start_aim_run
 from app.auth import Role, authenticate
+from app.config import conf as cfg
 from app.databases import RetrieveData, get_context_from_db, post_embeddings
 from app.embedding_generator import embedding_generator
 from app.langgraph_flow import app as langgraph_app
@@ -14,45 +15,51 @@ from chainlit.input_widget import Select, Slider
 from chainlit.types import ThreadDict
 from langchain.memory import ConversationBufferMemory
 
-collection_name = "prueba_lines"
-
 
 def format_docs(docs):
     return "\n\n".join([d.page_content for d in docs])
 
 
-# Callback de autenticación con sistema robusto
-@cl.password_auth_callback
-async def auth_callback(username: str, password: str):
-    return await authenticate(username, password)
+if cfg.PROJECT == "default":
+    # Callback de autenticación con sistema robusto
+    @cl.password_auth_callback
+    async def auth_callback(username: str, password: str):
+        return await authenticate(username, password)
 
+    @cl.oauth_callback
+    def oauth_callback(
+        provider_id: str,
+        token: str,
+        raw_user_data: Dict[str, str],
+    ):
+        email = raw_user_data.get("email")
+        display_name = raw_user_data.get("name", "")
 
-@cl.oauth_callback
-def oauth_callback(
-    provider_id: str,
-    token: str,
-    raw_user_data: Dict[str, str],
-):
-    email = raw_user_data.get("email")
-    display_name = raw_user_data.get("name", "")
+        if not email:
+            print("OAuth callback: Email no proporcionado")
+            return None
 
-    if not email:
-        print("OAuth callback: Email no proporcionado")
-        return None
-
-    return cl.User(
-        identifier=email,
-        metadata={
-            "role": Role.CLIENT.value,
-            "provider": provider_id,
-            "display_name": display_name,
-            "email": email,
-        },
-    )
+        return cl.User(
+            identifier=email,
+            metadata={
+                "role": Role.CLIENT.value,
+                "provider": provider_id,
+                "display_name": display_name,
+                "email": email,
+            },
+        )
 
 
 @cl.on_chat_start
 async def start():
+    match cfg.PROJECT:
+        case "default":
+            cl.user_session.set("collection_name", "prueba_lines")
+        case "chat-lines":
+            session_id = cl.context.session.id
+            cl.user_session.set("collection_name", f"lines-{session_id}")
+        case "chat-frlp":
+            cl.user_session.set("collection_name", "chat_frlp")
     cl.user_session.set("session_number", 1)
     app_user = cl.user_session.get("user")
     cl.user_session.set("memory", ConversationBufferMemory(return_messages=True))
@@ -72,6 +79,7 @@ async def start():
                 values=[
                     "llama3.1",
                     "qwen2.5vl",
+                    "qwen3:8b",
                 ],
                 initial_index=1,
             ),
@@ -154,6 +162,7 @@ async def vectordb_results_step(query: str, retries: int = 0):
         cl.context.current_step.name = f"Buscando contexto en DB vectorial (intento {retries})"
 
     settings = cl.user_session.get("settings")
+    collection_name = cl.user_session.get("collection_name")
     query_embedding = await cl.make_async(embedding_generator.get_embeddings)([query])
     query_embedding = query_embedding[0]
     results = await cl.make_async(get_context_from_db)(
@@ -238,6 +247,7 @@ async def on_message(message: cl.Message):
                 embeddings, chunks
             )
             print("Embeddings formateados")
+            collection_name = cl.user_session.get("collection_name")
             result = await cl.make_async(post_embeddings)(
                 collection_name=collection_name, dataWithEmbeddings=embeddings_data
             )
