@@ -1,7 +1,7 @@
 import nest_asyncio
 import pymupdf4llm
 from app.config import conf
-from app.splitter.markdown_splitter import split_text_with_langchain as text_splitter
+from app.splitter.markdown_splitter import split_text_with_langchain
 from llama_parse import LlamaParse
 
 nest_asyncio.apply()
@@ -15,17 +15,14 @@ __parser = LlamaParse(
 )
 
 
-def prepare_chunks_from_docs(file_path: str, theme: str, subtheme: str):
+def prepare_chunks_from_docs(file_path: str):
     documents = __parser.load_data(file_path=file_path)
 
     doc_text = []
     for doc in documents:
         doc_text.append(doc.text)
-
-    doc_text = text_splitter.create_documents(
-        doc_text, metadatas=[{"source": file_path, "theme": theme, "subtheme": subtheme}]
-    )
-    chunks = text_splitter.split_documents(documents=doc_text)
+    
+    chunks = split_text_with_langchain(doc_text)
 
     return chunks
 
