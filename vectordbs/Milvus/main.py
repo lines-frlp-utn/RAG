@@ -157,7 +157,7 @@ def get_context_with_filters(query_data: QueryData):
 
 @app.post("/upload-embeddings")
 def upload(data: EmbeddingData):
-    upload_pdf_to_vector_db(data.dataWithEmbeddings, data.collection_name)
+    upload_embedding_to_vector_db(data.dataWithEmbeddings, data.collection_name)
     return {"status": "success"}
 
 
