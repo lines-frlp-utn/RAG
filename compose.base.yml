@@ -122,6 +122,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+    restart: ${RESTART_POLICY:-no}
 
   pgadmin:
     image: dpage/pgadmin4:latest
