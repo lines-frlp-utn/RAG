@@ -92,9 +92,6 @@ def test_upload_embedding_to_vector_db():
         for i in range(len(vectors))
     ]
 
-    # print("Data has", len(data), "entities, each with fields: ", data[0].keys())
-    # print("Vector dim:", len(data[0]["vector"]))
-
     # Nombre de la colección de prueba en Milvus
     collection_name = 'Prueba'
 
@@ -166,6 +163,8 @@ def test_get_context_with_filters():
     # Ejecución de la búsqueda semántica con filtros aplicados
     response = get_context_with_filters(query_data)
 
+    print(f"Response: {response}")
+    
     # Validacion de respuesta no debe ser nula
     assert response is not None, "La respuesta no debería ser None"
     

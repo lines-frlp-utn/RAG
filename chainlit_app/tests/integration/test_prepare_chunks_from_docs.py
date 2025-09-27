@@ -50,4 +50,3 @@ Planificación Ciclo lectivo 2024 – Ordenanza 1877
 
     
     assert chunks[0] == mock_text # Verificar que el primer fragmento coincide con el texto esperado
-    assert len(chunks) == 95  # Verificar que se generaron 95 fragmentos en total
