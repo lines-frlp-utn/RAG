@@ -149,9 +149,34 @@ async def test_get_context_endpoint():
     async with httpx.AsyncClient() as client:
         response = await client.post(
             f"{conf.DB_URL}:{conf.DB_PORT}/get-context",
-            json={"collection_name": collection_name, "query": query, "query_embedding": query_embedding[0].tolist()},
+            json={"collection_name": collection_name, "query": query, "query_embedding": query_embedding.tolist()},
             timeout=30.0  # Timeout opcional para evitar bloqueos
         )
     
         # Validación: el endpoint debe responder con éxito (200)
         assert response.status_code == 200
+
+        # Extraer los datos JSON de la respuesta
+        data = response.json()
+        
+        # Validacion de respuesta no debe ser nula
+        assert data is not None, "La respuesta no debería ser None"
+        
+        assert isinstance(data, list), f"La respuesta debería ser una lista, no {type(data)}"
+        assert len(data) > 0, "Debería haber al menos un resultado para esta consulta"
+        
+        # Validar la estructura del primer resultado
+        first_result = data[0]
+        print(f"Primer resultado: {first_result}")
+        
+        # Validar los valores específicos
+        assert first_result['id'] is not None, "El ID no debería ser None"
+        assert isinstance(first_result['id'], (str, int)), f"ID debería ser str o int, no {type(first_result['id'])}"
+        
+        assert first_result['text'] is not None, "El texto no debería ser None"
+        assert isinstance(first_result['text'], str), f"Text debería ser str, no {type(first_result['text'])}"
+        assert len(first_result['text']) > 0, "El texto no debería estar vacío"
+        
+        # Validar que el texto contiene información relevante
+        assert "Alan Turing" in first_result['text'], "El texto debería mencionar a Alan Turing"
+        assert "research" in first_result['text'] or "AI" in first_result['text'], "El texto debería contener términos relevantes"
