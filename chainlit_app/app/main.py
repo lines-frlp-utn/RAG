@@ -20,7 +20,7 @@ def format_docs(docs):
     return "\n\n".join([d.page_content for d in docs])
 
 
-if cfg.PROJECT == "default":
+if cfg.PROJECT_ENV == "default":
     # Callback de autenticación con sistema robusto
     @cl.password_auth_callback
     async def auth_callback(username: str, password: str):
@@ -52,12 +52,12 @@ if cfg.PROJECT == "default":
 
 @cl.on_chat_start
 async def start():
-    match cfg.PROJECT:
+    match cfg.PROJECT_ENV:
         case "default":
             cl.user_session.set("collection_name", "prueba_lines")
         case "chat-lines":
             session_id = cl.context.session.id
-            cl.user_session.set("collection_name", f"lines-{session_id}")
+            cl.user_session.set("collection_name", (f"lines_{session_id}").replace("-", "_"))
         case "chat-frlp":
             cl.user_session.set("collection_name", "chat_frlp")
     cl.user_session.set("session_number", 1)
@@ -216,7 +216,7 @@ async def on_message(message: cl.Message):
     user = cl.user_session.get("user")
 
     # Si se recibió un archivo y el usuario tiene rol CLIENT, procesarlo igual que antes
-    if message.elements and user and user.metadata["role"] == Role.CLIENT.value:
+    if message.elements:
         file = message.elements[0]
         settings = cl.user_session.get("settings")
         try:

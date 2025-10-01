@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.116.1",
-    "pymilvus[model]>=2.6.1",
+    "pymilvus[model]>=2.6.2",
     "uvicorn"
     # "python-multipart>=0.0.20",
 ]

@@ -70,6 +70,7 @@ services:
       - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET}
       - DATABASE_URL=postgresql://chainlit:chainlit@chainlit_pg:5432/chainlit
       - USE_AIM=true
+      - PROJECT_ENV=default
     volumes:
       - rag-volume:/chainlit_app/database
     labels:
@@ -100,7 +101,7 @@ services:
       - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET}
       - DATABASE_URL=postgresql://chainlit:chainlit@chainlit_pg:5432/chainlit
       - USE_AIM=true
-      - PROJECT="chat-lines"
+      - PROJECT_ENV=chat-lines
     volumes:
       - rag-volume:/chainlit_app/database
     depends_on:
@@ -127,7 +128,7 @@ services:
       - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET}
       - DATABASE_URL=postgresql://chainlit:chainlit@chainlit_pg:5432/chainlit
       - USE_AIM=true
-      - PROJECT="chat-frlp"
+      - PROJECT_ENV=chat-frlp
     volumes:
       - rag-volume:/chainlit_app/database
     depends_on:
@@ -136,7 +137,7 @@ services:
     restart: ${RESTART_POLICY:-no}
 
   traefik:
-    image: traefik:v3.3
+    image: traefik:v3.5.3
     container_name: traefik
     command:
       - "--api.dashboard=true"

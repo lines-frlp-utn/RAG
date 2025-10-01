@@ -12,8 +12,7 @@ class Settings(BaseSettings):
     OAUTH_GOOGLE_CLIENT_ID: str | None
     OAUTH_GOOGLE_CLIENT_SECRET: str | None
     DATABASE_URL: str
-
-    PROJECT: str = "default"
+    PROJECT_ENV: str
 
 
 conf = Settings()
