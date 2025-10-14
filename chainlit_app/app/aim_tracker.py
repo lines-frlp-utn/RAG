@@ -6,7 +6,13 @@ def start_aim_run():
         from aim import Run
 
         try:
-            aim_run = Run(repo="aim://aim-server:53800", experiment="Lines chat")
+            match conf.PROJECT_ENV:
+                case "default":
+                    aim_run = Run(repo="aim://aim-server:53800", experiment="Desa Lines Chat")
+                case "chat-lines":
+                     aim_run = Run(repo="aim://aim-server:53800", experiment="Lines Chat")
+                case "chat-frlp":
+                     aim_run = Run(repo="aim://aim-server:53800", experiment="FRLP chat")
             return aim_run
         except Exception as e:
             print(
