@@ -17,4 +17,4 @@ COPY .chainlit/no_upload_config.toml /code/.chainlit/config.toml
 COPY public-frlp /code/public
 
 EXPOSE 80
-CMD ["python", "-m", "chainlit", "run", "app/main.py", "--host", "0.0.0.0", "--port", "80"]
+CMD ["python", "-m", "uvicorn", "app.main:main_app", "--host", "0.0.0.0", "--port", "80"]

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload PDF | Vector Manager</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+      font-family: "Inter", sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 12px 25px rgba(0,0,0,0.08);
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      animation: fadeIn 0.5s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    h2 {
+      color: #111827;
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+    }
+    p {
+      color: #6b7280;
+      margin-bottom: 25px;
+    }
+    input[type="file"] {
+      width: 100%;
+      padding: 35px;
+      border: 2px dashed #a5b4fc;
+      border-radius: 12px;
+      background-color: #f9fafb;
+      cursor: pointer;
+      color: #6b7280;
+      transition: all 0.3s ease;
+    }
+    input[type="file"]:hover {
+      background-color: #eef2ff;
+      border-color: #6366f1;
+    }
+    button {
+      margin-top: 25px;
+      background-color: #4f46e5;
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: #4338ca;
+    }
+    #response {
+      margin-top: 20px;
+      font-size: 0.95rem;
+      color: #374151;
+    }
+    .spinner {
+      margin-top: 20px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #4f46e5;
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      animation: spin 1s linear infinite;
+      display: none;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .footer {
+      margin-top: 25px;
+      color: #9ca3af;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+  <h2>📄 Subir un PDF</h2>
+  <p>Selecciona un archivo PDF para generar embeddings y subirlo a Milvus.</p>
+    <form id="uploadForm">
+  <input type="file" name="file" accept=".pdf" required>
+  <button type="submit">Subir</button>
+    </form>
+    <div class="spinner" id="spinner"></div>
+    <div id="response"></div>
+  <div class="footer">Administrador de vectores Milvus</div>
+  </div>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const spinner = document.getElementById('spinner');
+    const responseDiv = document.getElementById('response');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fileInput = form.querySelector('input[type="file"]');
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      spinner.style.display = 'block';
+      responseDiv.textContent = '';
+
+      try {
+        const res = await fetch('/upload-pdf', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        spinner.style.display = 'none';
+        if (res.ok) {
+          responseDiv.style.color = '#16a34a';
+          responseDiv.textContent = data.message || '¡Subida exitosa!';
+        } else {
+          responseDiv.style.color = '#dc2626';
+          responseDiv.textContent = data.error || 'La subida falló.';
+        }
+      } catch (err) {
+        spinner.style.display = 'none';
+        responseDiv.style.color = '#dc2626';
+        responseDiv.textContent = 'Error al subir el archivo.';
+      }
+    });
+  </script>
+</body>
+</html>

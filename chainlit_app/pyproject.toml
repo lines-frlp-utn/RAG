@@ -18,7 +18,7 @@ dependencies = [
     "langchain-text-splitters>=0.3.6",
     "pymupdf4llm>=0.0.17",
     "aim>=3.28.0",
-    "chainlit>=2.4.302",
+    "chainlit>=2.8.3",
     "langgraph",
     "httpx>=0.28.1",
     "asyncpg>=0.30.0",
