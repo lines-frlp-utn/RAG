@@ -13,7 +13,11 @@ from app.splitter.markdown_splitter import split_markdown_text as markdown_split
 from app.splitter.semantic_splitter import split_semantic as semantic_split
 from chainlit.input_widget import Select, Slider
 from chainlit.types import ThreadDict
-from langchain.memory import ConversationBufferMemory
+from langchain_core.chat_history import InMemoryChatMessageHistory
+
+class ConversationBufferMemory:
+    def __init__(self, return_messages=True):
+        self.chat_memory = InMemoryChatMessageHistory()
 
 
 def format_docs(docs):

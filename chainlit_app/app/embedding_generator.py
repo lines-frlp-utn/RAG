@@ -2,7 +2,7 @@ import hashlib
 
 import numpy as np
 from app.config import conf
-from langchain.embeddings.base import Embeddings
+from langchain_core.embeddings import Embeddings
 from openai import OpenAI
 
 # Endpoint OpenAI-style de Ollama
