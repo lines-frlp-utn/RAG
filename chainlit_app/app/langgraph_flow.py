@@ -35,7 +35,7 @@ def classify_conversation(state: GraphState):
 # Node: Retrieve context from vector database
 async def retrieve(state: GraphState):
     retries = state.get("retry_count", 0) + 1
-    from app.main import vectordb_results_step
+    from app.cl_app import vectordb_results_step
 
     question_for_retrieval = state["question"]
 
@@ -62,7 +62,7 @@ def decide_based_on_classification(state: GraphState):
 
 # Node: Generate answer from context
 async def generate(state: GraphState):
-    from app.main import llm_step
+    from app.cl_app import llm_step
 
     settings = state.get("settings", {})
     # Usar el contexto solo si la calificación fue "yes"
@@ -79,7 +79,7 @@ async def generate(state: GraphState):
 
 # Node: Generate answer without context
 async def generate_no_context(state: GraphState):
-    from app.main import llm_step
+    from app.cl_app import llm_step
 
     settings = state.get("settings", {})
     answer = await llm_step(query=state["question"], context=None, **settings)
